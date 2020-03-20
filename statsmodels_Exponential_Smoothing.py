@@ -14,6 +14,7 @@ filterwarnings("ignore")
 
 
 ###########-------setting up input data-----------------######################
+
 up_limit = 20 # 设置level、trend、season项的取值上限
 steps_day, steps_week = 28, 4
 length = [730+steps_day, 365+steps_day, 104+steps_week, 52+steps_week] # 代表每个序列的长度，分别为周、日序列的一年及两年。
@@ -24,7 +25,8 @@ for i in range(-up_limit+1, 1):
     weights.append(0.6 ** i)  # 设置y_level项随机序列的权重呈递减指数分布，底数越小，y_level中较小值所占比例越大。
 weights = np.array(weights)
 
-y_season[0] = up_limit/4 * (1 + np.sin(np.linspace(0, 2*2*np.pi, length[0]))) # 用正弦函数模拟季节性
+# 用正弦函数模拟季节性
+y_season[0] = up_limit/4 * (1 + np.sin(np.linspace(0, 2*2*np.pi, length[0])))
 y_season[1] = up_limit/4 * (1 + np.sin(np.linspace(0, 2*np.pi, length[1])))
 y_season[2] = up_limit/4 * (1 + np.sin(np.linspace(0, 2*2*np.pi, length[2])))
 y_season[3] = up_limit/4 * (1 + np.sin(np.linspace(0, 2*np.pi, length[3])))
@@ -41,10 +43,12 @@ for i in range(0, len(length)):
     y_noise[i] = pd.Series(y_noise[i]).rename('y_noise')
     y_input[i] = pd.Series(y_input[i]).rename('y_input')
     y_input[i][y_input[i] < 0] = 0
+
 ###########-------setting up input data-----------------######################
 
 
 ###########-------plot input data-----------------######################
+
 plt.figure('730+28', figsize=(20,10))
 ax1 = plt.subplot(5,1,1)
 ax2 = plt.subplot(5,1,2)
@@ -92,10 +96,12 @@ y_level[3].plot(ax=ax2, legend=True)
 y_trend[3].plot(ax=ax3, legend=True)
 y_season[3].plot(ax=ax4, legend=True)
 y_noise[3].plot(ax=ax5, legend=True)
+
 ###########-------plot input data-----------------######################
 
 
 ###################------SES------------#########################
+
 fit_SES = SimpleExpSmoothing(y_input[0][0:730]).fit(smoothing_level=0.2)
 fit_SES_train = SimpleExpSmoothing(y_input[0][0:730]).fit(optimized=True, use_brute=False) # start_params取上一轮训练得到的alpha更好
 
@@ -181,10 +187,12 @@ fit_SES.fittedvalues.plot(ax=ax_SES, color='blue')
 fit_SES_train.fittedvalues.plot(ax=ax_SES, color='red')
 fit_SES.forecast(steps_week).rename(r'$\alpha=%s$'%fit_SES.model.params['smoothing_level']).plot(ax=ax_SES, color='b', legend=True)
 fit_SES_train.forecast(steps_week).rename(r'$\alpha=%s$'%fit_SES_train.model.params['smoothing_level']).plot(ax=ax_SES, color='red', legend=True)
+
 ###################------SES------------#########################
 
 
 ###################------Holt------------#########################
+
 Holt_add_dam = Holt(y_input[0][0:730], exponential=False, damped=True).fit(smoothing_level=0.1, smoothing_slope=0.2, damping_slope=0.92, optimized=False)
 Holt_add_dam_train = Holt(y_input[0][0:730], exponential=False, damped=True).fit(optimized=True, use_brute=False,)
 Holt_mul_dam = Holt(y_input[0][0:730], exponential=True, damped=True).fit(smoothing_level=0.1, smoothing_slope=0.2, damping_slope=0.92, optimized=False)
@@ -302,10 +310,12 @@ Holt_add_dam.forecast(steps_week).rename('Holt_add_dam').plot(ax=ax_Holt, color=
 Holt_add_dam_train.forecast(steps_week).rename('Holt_add_dam_train').plot(ax=ax_Holt, color='red', legend=True)
 Holt_mul_dam.forecast(steps_week).rename('Holt_mul_dam').plot(ax=ax_Holt, color='g', legend=True)
 Holt_mul_dam_train.forecast(steps_week).rename('Holt_mul_dam_train').plot(ax=ax_Holt, color='y', legend=True)
+
 ###################------Holt------------#########################
 
 
 ###################------HoltWinters------------#########################
+
 HW_add_add_dam = ExponentialSmoothing(y_input[0][0:730], seasonal_periods=365, trend='add', seasonal='add', damped=True).\
     fit(use_boxcox=True, use_basinhopping=False, use_brute=False)
 HW_add_mul_dam = ExponentialSmoothing(y_input[0][0:730], seasonal_periods=365, trend='add', seasonal='mul', damped=True).\
@@ -314,16 +324,6 @@ HW_mul_add_dam = ExponentialSmoothing(y_input[0][0:730], seasonal_periods=365, t
     fit(use_boxcox=True, use_basinhopping=False, use_brute=False)
 HW_mul_mul_dam = ExponentialSmoothing(y_input[0][0:730], seasonal_periods=365, trend='mul', seasonal='mul', damped=True).\
     fit(use_boxcox=True, use_basinhopping=False, use_brute=False)
-
-print()
-print('HoltWinters_730:')
-results=pd.DataFrame(index=[r"$\alpha$",r"$\beta$",r"$\phi$",r"$\gamma$",r"$l_0$","$b_0$","SSE"])
-params = ['smoothing_level', 'smoothing_slope', 'damping_slope', 'smoothing_seasonal', 'initial_level', 'initial_slope']
-results["HW_add_add_dam"] = [HW_add_add_dam.params[p] for p in params] + [HW_add_add_dam.sse]
-results["HW_add_mul_dam"] = [HW_add_mul_dam.params[p] for p in params] + [HW_add_mul_dam.sse]
-results["HW_mul_add_dam"] = [HW_mul_add_dam.params[p] for p in params] + [HW_mul_add_dam.sse]
-results["HW_mul_mul_dam"] = [HW_mul_mul_dam.params[p] for p in params] + [HW_mul_mul_dam.sse]
-print(results)
 
 plt.figure('730+28+HoltWinters', figsize=(20,10))
 ax_HoltWinters = y_input[0].rename('y_input[0]').plot(color='k', legend='True')
@@ -338,6 +338,48 @@ HW_add_mul_dam.forecast(steps_day).rename('HW_add_mul_dam').plot(ax=ax_HoltWinte
 HW_mul_add_dam.forecast(steps_day).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_day).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
 
+print()
+print('HoltWinters_730:')
+results = pd.DataFrame(index=["alpha","beta","phi","gamma","l_0","b_0","SSE"])
+params = ['smoothing_level', 'smoothing_slope', 'damping_slope', 'smoothing_seasonal', 'initial_level', 'initial_slope']
+results["HW_add_add_dam"] = [HW_add_add_dam.params[p] for p in params] + [HW_add_add_dam.sse]
+results["HW_add_mul_dam"] = [HW_add_mul_dam.params[p] for p in params] + [HW_add_mul_dam.sse]
+results["HW_mul_add_dam"] = [HW_mul_add_dam.params[p] for p in params] + [HW_mul_add_dam.sse]
+results["HW_mul_mul_dam"] = [HW_mul_mul_dam.params[p] for p in params] + [HW_mul_mul_dam.sse]
+print(results)
+
+df_HW_add_add_dam = pd.DataFrame(np.c_[y_input[0][:730], HW_add_add_dam.level, HW_add_add_dam.slope, HW_add_add_dam.season, HW_add_add_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[0][:730].index)
+print('internal items of HoltWinters_730 HW_add_add_dam are:')
+print(df_HW_add_add_dam)
+HW_add_add_dam_residual = (HW_add_add_dam.forecast(steps_day) - y_input[0][730:]) / y_input[0][730:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_730 HW_add_add_dam is:')
+print(HW_add_add_dam_residual)
+
+df_HW_add_mul_dam = pd.DataFrame(np.c_[y_input[0][:730], HW_add_mul_dam.level, HW_add_mul_dam.slope, HW_add_mul_dam.season, HW_add_mul_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[0][:730].index)
+print('internal items of HoltWinters_730 HW_add_mul_dam are:')
+print(df_HW_add_mul_dam)
+HW_add_mul_dam_residual = (HW_add_mul_dam.forecast(steps_day) - y_input[0][730:]) / y_input[0][730:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_730 HW_add_mul_dam is:')
+print(HW_add_mul_dam_residual)
+
+df_HW_mul_add_dam = pd.DataFrame(np.c_[y_input[0][:730], HW_mul_add_dam.level, HW_mul_add_dam.slope, HW_mul_add_dam.season, HW_mul_add_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[0][:730].index)
+print('internal items of HoltWinters_730 HW_mul_add_dam are:')
+print(df_HW_mul_add_dam)
+HW_mul_add_dam_residual = (HW_mul_add_dam.forecast(steps_day) - y_input[0][730:]) / y_input[0][730:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_730 HW_mul_add_dam is:')
+print(HW_mul_add_dam_residual)
+
+df_HW_mul_mul_dam = pd.DataFrame(np.c_[y_input[0][:730], HW_mul_mul_dam.level, HW_mul_mul_dam.slope, HW_mul_mul_dam.season, HW_mul_mul_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[0][:730].index)
+print('internal items of HoltWinters_730 HW_mul_mul_dam are:')
+print(df_HW_mul_mul_dam)
+HW_mul_mul_dam_residual = (HW_mul_mul_dam.forecast(steps_day) - y_input[0][730:]) / y_input[0][730:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_730 HW_mul_mul_dam is:')
+print(HW_mul_mul_dam_residual)
+
 ##############################
 
 HW_add_add_dam = ExponentialSmoothing(y_input[1][0:365+1], seasonal_periods=365, trend='add', seasonal='add', damped=True).\
@@ -349,17 +391,7 @@ HW_mul_add_dam = ExponentialSmoothing(y_input[1][0:365+1], seasonal_periods=365,
 HW_mul_mul_dam = ExponentialSmoothing(y_input[1][0:365+1], seasonal_periods=365, trend='mul', seasonal='mul', damped=True).\
     fit(use_boxcox=True, use_basinhopping=False, use_brute=False)
 
-print()
-print('HoltWinters_365:')
-results=pd.DataFrame(index=[r"$\alpha$",r"$\beta$",r"$\phi$",r"$\gamma$",r"$l_0$","$b_0$","SSE"])
-params = ['smoothing_level', 'smoothing_slope', 'damping_slope', 'smoothing_seasonal', 'initial_level', 'initial_slope']
-results["HW_add_add_dam"] = [HW_add_add_dam.params[p] for p in params] + [HW_add_add_dam.sse]
-results["HW_add_mul_dam"] = [HW_add_mul_dam.params[p] for p in params] + [HW_add_mul_dam.sse]
-results["HW_mul_add_dam"] = [HW_mul_add_dam.params[p] for p in params] + [HW_mul_add_dam.sse]
-results["HW_mul_mul_dam"] = [HW_mul_mul_dam.params[p] for p in params] + [HW_mul_mul_dam.sse]
-print(results)
-
-plt.figure('365+28+HoltWinters', figsize=(20,10))
+plt.figure('366+27+HoltWinters', figsize=(20,10))
 ax_HoltWinters = y_input[1].rename('y_input[1]').plot(color='k', legend='True')
 ax_HoltWinters.set_ylabel("amount")
 ax_HoltWinters.set_xlabel("day")
@@ -372,6 +404,48 @@ HW_add_mul_dam.forecast(steps_day-1).rename('HW_add_mul_dam').plot(ax=ax_HoltWin
 HW_mul_add_dam.forecast(steps_day-1).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_day-1).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
 
+print()
+print('HoltWinters_366:')
+results = pd.DataFrame(index=["alpha","beta","phi","gamma","l_0","b_0","SSE"])
+params = ['smoothing_level', 'smoothing_slope', 'damping_slope', 'smoothing_seasonal', 'initial_level', 'initial_slope']
+results["HW_add_add_dam"] = [HW_add_add_dam.params[p] for p in params] + [HW_add_add_dam.sse]
+results["HW_add_mul_dam"] = [HW_add_mul_dam.params[p] for p in params] + [HW_add_mul_dam.sse]
+results["HW_mul_add_dam"] = [HW_mul_add_dam.params[p] for p in params] + [HW_mul_add_dam.sse]
+results["HW_mul_mul_dam"] = [HW_mul_mul_dam.params[p] for p in params] + [HW_mul_mul_dam.sse]
+print(results)
+
+df_HW_add_add_dam = pd.DataFrame(np.c_[y_input[1][0:365+1], HW_add_add_dam.level, HW_add_add_dam.slope, HW_add_add_dam.season, HW_add_add_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[1][0:365+1].index)
+print('internal items of HoltWinters_366 HW_add_add_dam are:')
+print(df_HW_add_add_dam)
+HW_add_add_dam_residual = (HW_add_add_dam.forecast(steps_day-1) - y_input[1][365+1:]) / y_input[1][365+1:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_366 HW_add_add_dam is:')
+print(HW_add_add_dam_residual)
+
+df_HW_add_mul_dam = pd.DataFrame(np.c_[y_input[1][0:365+1], HW_add_mul_dam.level, HW_add_mul_dam.slope, HW_add_mul_dam.season, HW_add_mul_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[1][0:365+1].index)
+print('internal items of HoltWinters_366 HW_add_mul_dam are:')
+print(df_HW_add_mul_dam)
+HW_add_mul_dam_residual = (HW_add_mul_dam.forecast(steps_day-1) - y_input[1][365+1:]) / y_input[1][365+1:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_366 HW_add_mul_dam is:')
+print(HW_add_mul_dam_residual)
+
+df_HW_mul_add_dam = pd.DataFrame(np.c_[y_input[1][0:365+1], HW_mul_add_dam.level, HW_mul_add_dam.slope, HW_mul_add_dam.season, HW_mul_add_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[1][0:365+1].index)
+print('internal items of HoltWinters_366 HW_mul_add_dam are:')
+print(df_HW_mul_add_dam)
+HW_mul_add_dam_residual = (HW_mul_add_dam.forecast(steps_day-1) - y_input[1][365+1:]) / y_input[1][365+1:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_366 HW_mul_add_dam is:')
+print(HW_mul_add_dam_residual)
+
+df_HW_mul_mul_dam = pd.DataFrame(np.c_[y_input[1][0:365+1], HW_mul_mul_dam.level, HW_mul_mul_dam.slope, HW_mul_mul_dam.season, HW_mul_mul_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[1][0:365+1].index)
+print('internal items of HoltWinters_366 HW_mul_mul_dam are:')
+print(df_HW_mul_mul_dam)
+HW_mul_mul_dam_residual = (HW_mul_mul_dam.forecast(steps_day-1) - y_input[1][365+1:]) / y_input[1][365+1:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_366 HW_mul_mul_dam is:')
+print(HW_mul_mul_dam_residual)
+
 ##############################
 
 HW_add_add_dam = ExponentialSmoothing(y_input[2][0:104], seasonal_periods=52, trend='add', seasonal='add', damped=True).\
@@ -382,16 +456,6 @@ HW_mul_add_dam = ExponentialSmoothing(y_input[2][0:104], seasonal_periods=52, tr
     fit(use_boxcox=True, use_basinhopping=False, use_brute=False)
 HW_mul_mul_dam = ExponentialSmoothing(y_input[2][0:104], seasonal_periods=52, trend='mul', seasonal='mul', damped=True).\
     fit(use_boxcox=True, use_basinhopping=False, use_brute=False)
-
-print()
-print('HoltWinters_104:')
-results=pd.DataFrame(index=[r"$\alpha$",r"$\beta$",r"$\phi$",r"$\gamma$",r"$l_0$","$b_0$","SSE"])
-params = ['smoothing_level', 'smoothing_slope', 'damping_slope', 'smoothing_seasonal', 'initial_level', 'initial_slope']
-results["HW_add_add_dam"] = [HW_add_add_dam.params[p] for p in params] + [HW_add_add_dam.sse]
-results["HW_add_mul_dam"] = [HW_add_mul_dam.params[p] for p in params] + [HW_add_mul_dam.sse]
-results["HW_mul_add_dam"] = [HW_mul_add_dam.params[p] for p in params] + [HW_mul_add_dam.sse]
-results["HW_mul_mul_dam"] = [HW_mul_mul_dam.params[p] for p in params] + [HW_mul_mul_dam.sse]
-print(results)
 
 plt.figure('104+4+HoltWinters', figsize=(20,10))
 ax_HoltWinters = y_input[2].rename('y_input[2]').plot(color='k', legend='True')
@@ -406,6 +470,48 @@ HW_add_mul_dam.forecast(steps_week).rename('HW_add_mul_dam').plot(ax=ax_HoltWint
 HW_mul_add_dam.forecast(steps_week).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_week).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
 
+print()
+print('HoltWinters_104:')
+results = pd.DataFrame(index=["alpha","beta","phi","gamma","l_0","b_0","SSE"])
+params = ['smoothing_level', 'smoothing_slope', 'damping_slope', 'smoothing_seasonal', 'initial_level', 'initial_slope']
+results["HW_add_add_dam"] = [HW_add_add_dam.params[p] for p in params] + [HW_add_add_dam.sse]
+results["HW_add_mul_dam"] = [HW_add_mul_dam.params[p] for p in params] + [HW_add_mul_dam.sse]
+results["HW_mul_add_dam"] = [HW_mul_add_dam.params[p] for p in params] + [HW_mul_add_dam.sse]
+results["HW_mul_mul_dam"] = [HW_mul_mul_dam.params[p] for p in params] + [HW_mul_mul_dam.sse]
+print(results)
+
+df_HW_add_add_dam = pd.DataFrame(np.c_[y_input[2][:104], HW_add_add_dam.level, HW_add_add_dam.slope, HW_add_add_dam.season, HW_add_add_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[2][:104].index)
+print('internal items of HoltWinters_104 HW_add_add_dam are:')
+print(df_HW_add_add_dam)
+HW_add_add_dam_residual = (HW_add_add_dam.forecast(steps_week) - y_input[2][104:]) / y_input[2][104:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_104 HW_add_add_dam is:')
+print(HW_add_add_dam_residual)
+
+df_HW_add_mul_dam = pd.DataFrame(np.c_[y_input[2][:104], HW_add_mul_dam.level, HW_add_mul_dam.slope, HW_add_mul_dam.season, HW_add_mul_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[2][:104].index)
+print('internal items of HoltWinters_104 HW_add_mul_dam are:')
+print(df_HW_add_mul_dam)
+HW_add_mul_dam_residual = (HW_add_mul_dam.forecast(steps_week) - y_input[2][104:]) / y_input[2][104:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_104 HW_add_mul_dam is:')
+print(HW_add_mul_dam_residual)
+
+df_HW_mul_add_dam = pd.DataFrame(np.c_[y_input[2][:104], HW_mul_add_dam.level, HW_mul_add_dam.slope, HW_mul_add_dam.season, HW_mul_add_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[2][:104].index)
+print('internal items of HoltWinters_104 HW_mul_add_dam are:')
+print(df_HW_mul_add_dam)
+HW_mul_add_dam_residual = (HW_mul_add_dam.forecast(steps_week) - y_input[2][104:]) / y_input[2][104:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_104 HW_mul_add_dam is:')
+print(HW_mul_add_dam_residual)
+
+df_HW_mul_mul_dam = pd.DataFrame(np.c_[y_input[2][:104], HW_mul_mul_dam.level, HW_mul_mul_dam.slope, HW_mul_mul_dam.season, HW_mul_mul_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[2][:104].index)
+print('internal items of HoltWinters_104 HW_mul_mul_dam are:')
+print(df_HW_mul_mul_dam)
+HW_mul_mul_dam_residual = (HW_mul_mul_dam.forecast(steps_week) - y_input[2][104:]) / y_input[2][104:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_104 HW_mul_mul_dam is:')
+print(HW_mul_mul_dam_residual)
+
 ##############################
 
 HW_add_add_dam = ExponentialSmoothing(y_input[3][0:52+1], seasonal_periods=52, trend='add', seasonal='add', damped=True).\
@@ -417,17 +523,7 @@ HW_mul_add_dam = ExponentialSmoothing(y_input[3][0:52+1], seasonal_periods=52, t
 HW_mul_mul_dam = ExponentialSmoothing(y_input[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='mul', damped=True).\
     fit(use_boxcox=True, use_basinhopping=False, use_brute=False)
 
-print()
-print('HoltWinters_52:')
-results=pd.DataFrame(index=[r"$\alpha$",r"$\beta$",r"$\phi$",r"$\gamma$",r"$l_0$","$b_0$","SSE"])
-params = ['smoothing_level', 'smoothing_slope', 'damping_slope', 'smoothing_seasonal', 'initial_level', 'initial_slope']
-results["HW_add_add_dam"] = [HW_add_add_dam.params[p] for p in params] + [HW_add_add_dam.sse]
-results["HW_add_mul_dam"] = [HW_add_mul_dam.params[p] for p in params] + [HW_add_mul_dam.sse]
-results["HW_mul_add_dam"] = [HW_mul_add_dam.params[p] for p in params] + [HW_mul_add_dam.sse]
-results["HW_mul_mul_dam"] = [HW_mul_mul_dam.params[p] for p in params] + [HW_mul_mul_dam.sse]
-print(results)
-
-plt.figure('52+4+HoltWinters', figsize=(20,10))
+plt.figure('53+3+HoltWinters', figsize=(20,10))
 ax_HoltWinters = y_input[3].rename('y_input[3]').plot(color='k', legend='True')
 ax_HoltWinters.set_ylabel("amount")
 ax_HoltWinters.set_xlabel("day")
@@ -439,4 +535,47 @@ HW_add_add_dam.forecast(steps_week-1).rename('HW_add_add_dam').plot(ax=ax_HoltWi
 HW_add_mul_dam.forecast(steps_week-1).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
 HW_mul_add_dam.forecast(steps_week-1).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_week-1).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
+
+print()
+print('HoltWinters_53:')
+results = pd.DataFrame(index=['alpha','beta','phi','gamma','l_0','b_0','SSE'])
+params = ['smoothing_level', 'smoothing_slope', 'damping_slope', 'smoothing_seasonal', 'initial_level', 'initial_slope']
+results["HW_add_add_dam"] = [HW_add_add_dam.params[p] for p in params] + [HW_add_add_dam.sse]
+results["HW_add_mul_dam"] = [HW_add_mul_dam.params[p] for p in params] + [HW_add_mul_dam.sse]
+results["HW_mul_add_dam"] = [HW_mul_add_dam.params[p] for p in params] + [HW_mul_add_dam.sse]
+results["HW_mul_mul_dam"] = [HW_mul_mul_dam.params[p] for p in params] + [HW_mul_mul_dam.sse]
+print(results)
+
+df_HW_add_add_dam = pd.DataFrame(np.c_[y_input[3][:52+1], HW_add_add_dam.level, HW_add_add_dam.slope, HW_add_add_dam.season, HW_add_add_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[3][:52+1].index)
+print('internal items of HoltWinters_53 HW_add_add_dam are:')
+print(df_HW_add_add_dam)
+HW_add_add_dam_residual = (HW_add_add_dam.forecast(steps_week-1) - y_input[3][52+1:]) / y_input[3][52+1:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_53 HW_add_add_dam is:')
+print(HW_add_add_dam_residual)
+
+df_HW_add_mul_dam = pd.DataFrame(np.c_[y_input[3][:52+1], HW_add_mul_dam.level, HW_add_mul_dam.slope, HW_add_mul_dam.season, HW_add_mul_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[3][:52+1].index)
+print('internal items of HoltWinters_53 HW_add_mul_dam are:')
+print(df_HW_add_mul_dam)
+HW_add_mul_dam_residual = (HW_add_mul_dam.forecast(steps_week-1) - y_input[3][52+1:]) / y_input[3][52+1:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_53 HW_add_mul_dam is:')
+print(HW_add_mul_dam_residual)
+
+df_HW_mul_add_dam = pd.DataFrame(np.c_[y_input[3][:52+1], HW_mul_add_dam.level, HW_mul_add_dam.slope, HW_mul_add_dam.season, HW_mul_add_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[3][:52+1].index)
+print('internal items of HoltWinters_53 HW_mul_add_dam are:')
+print(df_HW_mul_add_dam)
+HW_mul_add_dam_residual = (HW_mul_add_dam.forecast(steps_week-1) - y_input[3][52+1:]) / y_input[3][52+1:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_53 HW_mul_add_dam is:')
+print(HW_mul_add_dam_residual)
+
+df_HW_mul_mul_dam = pd.DataFrame(np.c_[y_input[3][:52+1], HW_mul_mul_dam.level, HW_mul_mul_dam.slope, HW_mul_mul_dam.season, HW_mul_mul_dam.fittedvalues],
+                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input[3][:52+1].index)
+print('internal items of HoltWinters_53 HW_mul_mul_dam are:')
+print(df_HW_mul_mul_dam)
+HW_mul_mul_dam_residual = (HW_mul_mul_dam.forecast(steps_week-1) - y_input[3][52+1:]) / y_input[3][52+1:] * 100
+print('forecast and actual deviation ratio(%) of HoltWinters_53 HW_mul_mul_dam is:')
+print(HW_mul_mul_dam_residual)
+
 ###################------HoltWinters------------#########################
