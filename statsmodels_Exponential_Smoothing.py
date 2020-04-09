@@ -29,6 +29,7 @@ Holt(damped=True)和ExponentialSmoothing的目标函数是非凸函数，调用�
 在预测期容易出现离群值，因为季节项各点参考的历史值越、更少，受某一周期中数值大小的随机性影响更大。
 
 7. 在Holt和ExponentialSmoothing中，当damped=True时，预测值与历史观测值的偏离更小，各预测值的波动更小。
+设置damping_slope在change-point、趋势改变处更保险，更不容易使预测值在趋势上出现较大偏离，对Holt尤其重要。
 
 8. naive的多步预测模式（水平直线）和单步预测模式（折线），与SimpleExpSmoothing.fit(smoothing_level=1)的多步预测和单步预测模式均等价；
 对于naive、SimpleExpSmoothing和Holt(damping_slope很小时)，因为预测值为水平直线，难以适用于预测期走势斜率较大的情况；
@@ -45,28 +46,28 @@ Holt(damped=True)和ExponentialSmoothing的目标函数是非凸函数，调用�
 
 12. 多重季节性模型训练时间长，对于典型单一季节性时序，预测精度通常不如单一季节性模型高。
 
-13. 总结：从精度、开销、稳定性、全面性综合考虑，statsmodels中平滑类模型比生产系统和自定义平滑类模型更好。
+13. 如果在一定长度的验证集内预测值比真实值普遍偏小或偏大，则说明在训练集内有该模型没有捕捉到的模式；预测值与真实值的残差之和越趋近零越好。
+
+14. 总结：从精度、开销、稳定性、全面性综合考虑，statsmodels中平滑类模型比生产系统和自定义平滑类模型更好。
 statsmodels中可使用如下模型1：SimpleExpSmoothing().fit(optimized=True, use_brute=False)，
-2：Holt(exponential=False, damped=True).fit(damping_factor=趋近于1的小数, optimized=True, use_brute=False)，
-3：Holt(exponential=True, damped=True).fit(damping_factor=趋近于1的小数, optimized=True, use_brute=False)，
-4：ExponentialSmoothing(trend='add', seasonal='add', damped=True).fit(damping_factor=趋近于1的小数, use_boxcox=True, use_basinhopping=False, use_brute=True)
-5：ExponentialSmoothing(trend='add', seasonal='mul', damped=True).fit(damping_factor=趋近于1的小数, use_boxcox=True, use_basinhopping=False, use_brute=True)
-6：ExponentialSmoothing(trend='add', seasonal='mul', damped=True).fit(damping_factor=趋近于1的小数, use_boxcox=True, use_basinhopping=True, use_brute=False)
+2：Holt(exponential=False, damped=True).fit(damping_slope=趋近于1的小数, optimized=True, use_brute=False)，
+3：Holt(exponential=True, damped=True).fit(damping_slope=趋近于1的小数, optimized=True, use_brute=False)，
+4：ExponentialSmoothing(trend='add', seasonal='add', damped=True).fit(damping_slope=趋近于1的小数, use_boxcox=True, use_basinhopping=False, use_brute=True)
+5：ExponentialSmoothing(trend='add', seasonal='mul', damped=True).fit(damping_slope=趋近于1的小数, use_boxcox=True, use_basinhopping=False, use_brute=True)
+6：ExponentialSmoothing(trend='add', seasonal='mul', damped=True).fit(ƒ=趋近于1的小数, use_boxcox=True, use_basinhopping=True, use_brute=False)
 """
 
-import os
 import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.holtwinters import SimpleExpSmoothing, Holt, ExponentialSmoothing
 import smoothing_models
 import wualgorithm
-import math
-from scipy import stats
-from pandas import DataFrame
-from scipy import optimize
 import numpy as np
 import random
 from warnings import filterwarnings
+import seaborn as sns
+sns.set_style('darkgrid')
+plt.rc('font',size=10)
 filterwarnings("ignore")
 
 ###########---------------set up and plot input data-----------------######################
@@ -83,16 +84,30 @@ weights = np.array(weights)
 
 ##########################################################
 
-# 用正弦函数模拟加法季节性，并设置各分项
-y_season[0] = up_limit/8 * (1 + np.sin(np.linspace(0, 2*2*np.pi, length[0])))
-y_season[1] = up_limit/8 * (1 + np.sin(np.linspace(0, 2*np.pi, length[1])))
-y_season[2] = up_limit/8 * (1 + np.sin(np.linspace(0, 2*2*np.pi, length[2])))
-y_season[3] = up_limit/8 * (1 + np.sin(np.linspace(0, 2*np.pi, length[3])))
+# 用正弦函数模拟加法多重季节性，并设置level，trend，noise分项
+# y_season[0]是两年日序列的季节项，有两年、八个季度、24个月、104周共四个季节性分项
+y_season[0] = 4 * (1/2*np.sin(np.linspace(0, 2*2*np.pi*(1+28/730), length[0])) \
+              + 1/3*np.cos(np.linspace(0, 8*2*np.pi*(1+28/730), length[0])) \
+              + 1/4*np.sin(np.linspace(0, 24*2*np.pi*(1+28/730), length[0])) \
+              + 1/5*np.cos(np.linspace(0, 104*2*np.pi*(1+28/730), length[0])))
+# y_season[1]是一年日序列的季节项，有一年、四个季度、12个月、52周共四个季节性分项
+y_season[1] = 4 * (1/2*np.sin(np.linspace(0, 1*2*np.pi*(1+28/365), length[1])) \
+              + 1/3*np.cos(np.linspace(0, 4*2*np.pi*(1+28/365), length[1])) \
+              + 1/4*np.sin(np.linspace(0, 12*2*np.pi*(1+28/365), length[1])) \
+              + 1/5*np.cos(np.linspace(0, 52*2*np.pi*(1+28/365), length[1])))
+# y_season[2]是两年周序列的季节项，有两年、八个季度、24个月共三个季节性分项
+y_season[2] = 3 * (np.sin(np.linspace(0, 2*2*np.pi*(1+4/104), length[2])) \
+              + 1/2*np.cos(np.linspace(0, 8*2*np.pi*(1+4/104), length[2])) \
+              + 1/3*np.sin(np.linspace(0, 24*2*np.pi*(1+4/104), length[2])))
+# y_season[3]是一年周序列的季节项，有一年、四个季度、12个月共三个季节性分项
+y_season[3] = 3 * (np.sin(np.linspace(0, 1*2*np.pi*(1+4/52), length[3])) \
+              + 1/2*np.cos(np.linspace(0, 4*2*np.pi*(1+4/52), length[3])) \
+              + 1/3*np.sin(np.linspace(0, 12*2*np.pi*(1+4/52), length[3])))
 for i in range(0, len(length)):
-    y_level[i] = np.array(random.choices(range(0, up_limit), weights=weights, k=length[i])) / 5 + 3  # 用指数权重分布随机数模拟基础项
-    y_trend[i] = 1.5*max(y_season[i]) + np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])) + (min(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i]))) +
+    y_level[i] = np.array(random.choices(range(0, up_limit), weights=weights, k=length[i])) / 5 + 5  # 用指数权重分布随机数模拟基础项
+    y_trend[i] = 2*max(y_season[i]) + np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])) + (min(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i]))) +
                  max(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])))) / length[i] * np.linspace(1, length[i], num=length[i]) # 用对数函数与线性函数的均值模拟趋势性
-    y_noise[i] = np.random.normal(0, 1, length[i]) / 2 # 假定数据处于理想状态，用正态分布模拟噪音
+    y_noise[i] = np.random.normal(0, 1, length[i]) / 5 # 假定数据处于理想状态，用正态分布模拟噪音
     y_input_add[i] = y_level[i] + y_trend[i] + y_season[i] + y_noise[i] # 假定各项以加法方式组成输入数据
 
     y_level[i] = pd.Series(y_level[i]).rename('y_level')
@@ -173,16 +188,30 @@ y_noise[3].plot(ax=ax5, legend=True)
 
 ##########################################################
 
-# 用正弦函数模拟乘法季节性，并设置各分项
-y_season[0] = (2 + np.sin(np.linspace(0, 2*2*np.pi, length[0]))) * 2/3
-y_season[1] = (2 + np.sin(np.linspace(0, 2*np.pi, length[1]))) * 2/3
-y_season[2] = (2 + np.sin(np.linspace(0, 2*2*np.pi, length[2]))) * 2/3
-y_season[3] = (2 + np.sin(np.linspace(0, 2*np.pi, length[3]))) * 2/3
+# 用正弦函数模拟乘法多重季节性，并设置level，trend，noise分项
+# y_season[0]是两年日序列的季节项，有两年、八个季度、24个月、104周共四个季节性分项
+y_season[0] = 0.2 * (4+1/2+1/3+1/4+1/5 + 1/2*np.sin(np.linspace(0, 2*2*np.pi*(1+28/730), length[0])) \
+              + 1/3*np.cos(np.linspace(0, 8*2*np.pi*(1+28/730), length[0])) \
+              + 1/4*np.sin(np.linspace(0, 24*2*np.pi*(1+28/730), length[0])) \
+              + 1/5*np.cos(np.linspace(0, 104*2*np.pi*(1+28/730), length[0])))
+# y_season[1]是一年日序列的季节项，有一年、四个季度、12个月、52周共四个季节性分项
+y_season[1] = 0.2 * (4+1/2+1/3+1/4+1/5 + 1/2*np.sin(np.linspace(0, 1*2*np.pi*(1+28/365), length[1])) \
+              + 1/3*np.cos(np.linspace(0, 4*2*np.pi*(1+28/365), length[1])) \
+              + 1/4*np.sin(np.linspace(0, 12*2*np.pi*(1+28/365), length[1])) \
+              + 1/5*np.cos(np.linspace(0, 52*2*np.pi*(1+28/365), length[1])))
+# y_season[2]是两年周序列的季节项，有两年、八个季度、24个月共三个季节性分项
+y_season[2] = 0.2 * (3+1+1/2+1/3 + np.sin(np.linspace(0, 2*2*np.pi*(1+4/104), length[2])) \
+              + 1/2*np.cos(np.linspace(0, 8*2*np.pi*(1+4/104), length[2])) \
+              + 1/3*np.sin(np.linspace(0, 24*2*np.pi*(1+4/104), length[2])))
+# y_season[3]是一年周序列的季节项，有一年、四个季度、12个月共三个季节性分项
+y_season[3] = 0.2 * (3+1+1/2+1/3 + np.sin(np.linspace(0, 1*2*np.pi*(1+4/52), length[3])) \
+              + 1/2*np.cos(np.linspace(0, 4*2*np.pi*(1+4/52), length[3])) \
+              + 1/3*np.sin(np.linspace(0, 12*2*np.pi*(1+4/52), length[3])))
 for i in range(0, len(length)):
-    y_level[i] = np.array(random.choices(range(0, up_limit), weights=weights, k=length[i])) / 5 + 3  # 用指数权重分布随机数模拟基础项
-    y_trend[i] = 1.5*max(y_season[i]) + np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])) + (min(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i]))) +
+    y_level[i] = np.array(random.choices(range(0, up_limit), weights=weights, k=length[i])) / 10 + 5  # 用指数权重分布随机数模拟基础项
+    y_trend[i] = 2*max(y_season[i]) + np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])) + (min(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i]))) +
                  max(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])))) / length[i] * np.linspace(1, length[i], num=length[i]) # 用对数函数与线性函数的均值模拟趋势性
-    y_noise[i] = np.random.normal(0, 1, length[i]) / 2 # 假定数据处于理想状态，用正态分布模拟噪音
+    y_noise[i] = np.random.normal(0, 1, length[i]) / 5 # 假定数据处于理想状态，用正态分布模拟噪音
     y_input_mul[i] = (y_level[i] + y_trend[i]) * y_season[i] + y_noise[i] # 假定季节项以乘法方式组成输入数据
 
     y_level[i] = pd.Series(y_level[i]).rename('y_level')
