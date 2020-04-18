@@ -107,7 +107,7 @@ for i in range(0, len(length)):
     y_level[i] = np.array(random.choices(range(0, up_limit), weights=weights, k=length[i])) / 5 + 5  # 用指数权重分布随机数模拟基础项
     y_trend[i] = 2*max(y_season[i]) + np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])) + (min(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i]))) +
                  max(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])))) / length[i] * np.linspace(1, length[i], num=length[i]) # 用对数函数与线性函数的均值模拟趋势性
-    y_noise[i] = np.random.normal(0, 1, length[i]) / 5 # 假定数据处于理想状态，用正态分布模拟噪音
+    y_noise[i] = np.random.normal(0, 1, length[i]) / 5  # 假定数据处于理想状态，并使噪音以加法方式进入模型，则可令噪音在0附近呈正态分布。
     y_input_add[i] = y_level[i] + y_trend[i] + y_season[i] + y_noise[i] # 假定各项以加法方式组成输入数据
 
     y_level[i] = pd.Series(y_level[i]).rename('y_level')
@@ -211,8 +211,9 @@ for i in range(0, len(length)):
     y_level[i] = np.array(random.choices(range(0, up_limit), weights=weights, k=length[i])) / 10 + 5  # 用指数权重分布随机数模拟基础项
     y_trend[i] = 2*max(y_season[i]) + np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])) + (min(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i]))) +
                  max(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])))) / length[i] * np.linspace(1, length[i], num=length[i]) # 用对数函数与线性函数的均值模拟趋势性
-    y_noise[i] = np.random.normal(0, 1, length[i]) / 5 # 假定数据处于理想状态，用正态分布模拟噪音
-    y_input_mul[i] = (y_level[i] + y_trend[i]) * y_season[i] + y_noise[i] # 假定季节项以乘法方式组成输入数据
+    # 假定数据处于理想状态，并使噪音以乘法方式进入模型，可构造外层函数是指数函数，内层函数是正态分布的复合函数，使噪音在1附近呈类正态分布。
+    y_noise[i] = 1.1**(np.random.normal(0, 1, length[i])/5)
+    y_input_mul[i] = (y_level[i] + y_trend[i]) * y_season[i] * y_noise[i] # 假定季节项以乘法方式组成输入数据
 
     y_level[i] = pd.Series(y_level[i]).rename('y_level')
     y_trend[i] = pd.Series(y_trend[i]).rename('y_trend')

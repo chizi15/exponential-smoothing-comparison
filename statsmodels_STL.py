@@ -1,5 +1,5 @@
 '''
-1. statsmodels中的Seasonal-Trend decomposition using LOESS无法直接预测时序，但可以通过将分解出的trend和/或seasonal分项继续分解，
+1. statsmodels中的Seasonal-Trend decomposition 无法直接预测时序，但可以通过将分解出的trend和/或seasonal分项继续分解，
 得到规律性强、容易预测的子trend分项和/或子seasonal分项，对各子分项单独预测，再将各子分项的预测结果相加，得到最终的预测值。
 需要注意的是，如果分解出的子分项太多，则残差项也会更多，则各子分项预测值相加得到的最终预测值通常会有更大的残差。
 所以需要控制分解出的层级数目，找到提高子分项规律性与残差和增大的平衡点。
@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 from warnings import filterwarnings
-from statsmodels.tsa.seasonal import STL
+from statsmodels.tsa.seasonal import STL, seasonal_decompose
+from statsmodels.tsa.holtwinters import SimpleExpSmoothing, Holt, ExponentialSmoothing
 import seaborn as sns
 sns.set_style('darkgrid')
 plt.rc('figure',figsize=(19, 9))
@@ -54,7 +55,7 @@ for i in range(0, len(length)):
     y_level[i] = np.array(random.choices(range(0, up_limit), weights=weights, k=length[i])) / 5 + 5  # 用指数权重分布随机数模拟基础项
     y_trend[i] = 2*max(y_season[i]) + np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])) + (min(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i]))) +
                  max(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])))) / length[i] * np.linspace(1, length[i], num=length[i]) # 用对数函数与线性函数的均值模拟趋势性
-    y_noise[i] = np.random.normal(0, 1, length[i]) / 5  # 假定数据处于理想状态，用正态分布模拟噪音
+    y_noise[i] = np.random.normal(0, 1, length[i]) / 5  # 假定数据处于理想状态，并使噪音以加法方式进入模型，则可令噪音在0附近呈正态分布。
     y_input_add[i] = y_level[i] + y_trend[i] + y_season[i] + y_noise[i]  # 假定各项以加法方式组成输入数据
 
     y_level[i] = pd.Series(y_level[i]).rename('y_level')
@@ -81,8 +82,31 @@ y_level[0].plot(ax=ax2, legend=True)
 y_trend[0].plot(ax=ax3, legend=True)
 y_season[0].plot(ax=ax4, legend=True)
 y_noise[0].plot(ax=ax5, legend=True)
+
 # 绘制STL分解序列；period, seasonal, trend must be odd.
-STL(y_input_add[0], period=365, seasonal=7, trend=(730+28) + (((730+28) % 2) == 0)).fit().plot()
+STL(y_input_add[0], period=365, seasonal=7, trend=(730+steps_day) + (((730+steps_day) % 2) == 0)).fit().plot()
+
+# Seasonal decomposition using moving averages
+# 先分解小周期，则seasonal项具有强规律性，即可对trend项进行再分解
+sdma_1 = seasonal_decompose(y_input_add[2][0:104], model='add', period=4, two_sided=False)
+sdma_1.plot()
+sdma_trend_1 = sdma_1.trend.dropna().reset_index(drop=True)
+sdma_2 = seasonal_decompose(sdma_trend_1, model='add', period=13, two_sided=False)
+sdma_2.plot()
+sdma_trend_2 = sdma_2.trend.dropna().reset_index(drop=True)
+
+forecast = sdma_1.seasonal[:steps_week].values + sdma_2.seasonal[:steps_week].values + ExponentialSmoothing(sdma_trend_2, trend='add', seasonal='add', seasonal_periods=26).fit().forecast(steps_week).values
+
+# 先分解大周期，则trend项具有强规律性，即可对seasonal项进行再分解
+sdma_1 = seasonal_decompose(y_input_add[2][0:104], model='add', period=52, two_sided=False)
+sdma_1.plot()
+sdma_seasonal_1 = sdma_1.seasonal.dropna().reset_index(drop=True)
+sdma_2 = seasonal_decompose(sdma_seasonal_1, model='add', period=13, two_sided=False)
+sdma_2.plot()
+sdma_trend_2 = sdma_2.seasonal.dropna().reset_index(drop=True)
+
+
+
 
 plt.figure('add: 365+28')
 ax1 = plt.subplot(5,1,1)
@@ -166,8 +190,9 @@ for i in range(0, len(length)):
     y_level[i] = np.array(random.choices(range(0, up_limit), weights=weights, k=length[i])) / 10 + 5  # 用指数权重分布随机数模拟基础项
     y_trend[i] = 2*max(y_season[i]) + np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])) + (min(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i]))) +
                  max(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])))) / length[i] * np.linspace(1, length[i], num=length[i]) # 用对数函数与线性函数的均值模拟趋势性
-    y_noise[i] = np.random.normal(0, 1, length[i]) / 5 # 假定数据处于理想状态，用正态分布模拟噪音
-    y_input_mul[i] = (y_level[i] + y_trend[i]) * y_season[i] + y_noise[i] # 假定季节项以乘法方式组成输入数据
+    # 假定数据处于理想状态，并使噪音以乘法方式进入模型，可构造外层函数是指数函数，内层函数是正态分布的复合函数，使噪音在1附近呈类正态分布。
+    y_noise[i] = 1.1**(np.random.normal(0, 1, length[i])/5)
+    y_input_mul[i] = (y_level[i] + y_trend[i]) * y_season[i] * y_noise[i]  # 假定季节项以乘法方式组成输入数据
 
     y_level[i] = pd.Series(y_level[i]).rename('y_level')
     y_trend[i] = pd.Series(y_trend[i]).rename('y_trend')
