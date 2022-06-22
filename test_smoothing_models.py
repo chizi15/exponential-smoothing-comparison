@@ -80,7 +80,7 @@ def rmse_loss_func(params, *args):
             rmse:原始序列与预测序列间的均方根误差，作为目标函数。
     """
 
-    Y = args[0]
+    Y = list(args[0])
     model = args[1]
 
     if model == 'simple':
@@ -137,9 +137,10 @@ def rmse_loss_func(params, *args):
         a = [sum(Y[:]) / float(len(Y))]
         b = [(sum(Y[math.ceil(len(Y) / 2):]) - sum(Y[:math.floor(len(Y) / 2)])) / (math.floor(len(Y) / 2)) ** 2]
         s = (np.array(Y[:len(Y) // m * m]).reshape(-1, m).mean(axis=0) - a[0]).tolist()
-        y = [(a[0] + b[0]) + s[0]]
+        # y = [(a[0] + b[0]) + s[0]]
+        y = []
 
-        for i in range(len(Y)):
+        for i in range(len(Y) - 1):
             a.append(alpha * (Y[i] - s[-m]) + (1 - alpha) * (a[i] + b[i]))
             b.append(beta * (a[i + 1] - a[i]) + (1 - beta) * b[i])
             s.append(gamma * (Y[i] - a[i + 1]) + (1 - gamma) * s[-m])
@@ -288,7 +289,7 @@ def rmse_loss_func(params, *args):
         则y[1]应与Y[1]匹配；即y[n+1]是由Y[n]算出，则y[n+1]与Y[n+1]匹配。又因为y具有人为赋初值y[0]，len(y)==len(Y+1)，Y[-1]产生预测值y[-1],
         则没有真实值与y[-1]匹配，则最后一个真实值Y[-1]与倒数第二个预测值y[-2]匹配。综上，匹配关系为：Y[1:], y[1:-1]。
     '''
-    rmse_distance = rmse(Y[1:], y[1:-1])  # 构造RMSE目标函数
+    rmse_distance = rmse(Y[1:], y)  # 构造RMSE目标函数
 
     return rmse_distance
 
@@ -995,8 +996,8 @@ def double_mul(x, fc, alpha=None, beta=None, boundaries = [(1 / 2 * 1e-1, 1 - 1 
 
 
 def additive(x, m, fc, alpha=None, beta=None, gamma=None,
-             boundaries = [(1 / 2 * 1e-1, 1 - 1 / 2 * 1e-1), (1 / 2 * 1e-1, 1 - 1 / 2 * 1e-1), (1e-1, 1 - 1e-1)],
-             method='trust-constr', initial_values = np.array([0.2, 0.2, 2 / 3]), weights=None):
+             boundaries = [(1 / 2 * 1e-1, 0.1), (0.05, 0.05), (0.99, 1)],
+             method='L-BFGS-B', initial_values = np.array([0.2, 0.2, 2 / 3]), weights=None):
     """
         三参数指数平滑加法模型
         parameters:
@@ -1025,7 +1026,7 @@ def additive(x, m, fc, alpha=None, beta=None, gamma=None,
             fittedvalues： 历史区间的拟合值
     """
 
-    Y = x[:]
+    Y = list(x[:])
     if alpha is None or beta is None or gamma is None:
         model = 'additive'
         if method != 'global':
@@ -1054,7 +1055,8 @@ def additive(x, m, fc, alpha=None, beta=None, gamma=None,
                             weights=[sum(weights[:m])+1, sum(weights[m:2*m])+1]) - a[0]).tolist()
         else:
             s = (np.average(np.array(Y[:len(Y) // m * m]).reshape(-1, m), axis=0) - a[0]).tolist()
-        y = [a[0] + b[0] + s[0]]
+        # y = [a[0] + b[0] + s[0]]
+        y = []
     elif weights == 'equal':
         weights = np.array([1 / len(Y)] * len(Y))
         a = [np.average(Y, weights=weights)]
@@ -1064,41 +1066,48 @@ def additive(x, m, fc, alpha=None, beta=None, gamma=None,
                             weights=[sum(weights[:m])+1, sum(weights[m:2*m])+1]) - a[0]).tolist()
         else:
             s = (np.average(np.array(Y[:len(Y) // m * m]).reshape(-1, m), axis=0) - a[0]).tolist()
-        y = [a[0] + b[0] + s[0]]
-    else:  # a,b,s的初始值不考虑历史值的全长信息
+        # y = [a[0] + b[0] + s[0]]
+        y = []
+    else:  # a,b的初始值不使用历史值的全长信息
         weights = np.array([1 / len(Y)] * len(Y))
         a = [Y[0]]
         b = [Y[1] - Y[0]]
         s = [Y[i] - a[0] for i in range(m)]
-        y = [a[0] + b[0] + s[0]]
+        # y = [a[0] + b[0] + s[0]]
+        y = []
 
-    for i in range(len(Y) + fc):
+    for i in range(len(x) - 1 + fc):
         if i == len(Y):
             Y.append(round(a[-1] + b[-1] + s[-m], 4))
         a.append(alpha * (Y[i] - s[-m]) + (1 - alpha) * (a[i] + b[i]))
         b.append(beta * (a[i + 1] - a[i]) + (1 - beta) * b[i])
         s.append(gamma * (Y[i] - a[i + 1]) + (1 - gamma) * s[-m])
-        y.append(round(a[i + 1] + b[i + 1] + s[-m], 4))
+        # y.append(round(a[i + 1] + b[i + 1] + s[-m], 4))  # 由Y[0]得到a[1], b[1], s[m-1+1], y[0]，四者均是对下一点的预测，所以拟合时y[0]匹配Y[1]，即y[i]匹配Y[i+1]
+        y.append(round(a[-1] + b[-1] + s[-m], 4))  # 由Y[0]得到a[1], b[1], s[m-1+1], y[0]，四者均是对下一点的预测，所以拟合时y[0]匹配Y[1]，即y[i]匹配Y[i+1]
 
-    print(Y[-fc:], '\n', y[-fc:])
-    if sum(np.array(Y[-fc:]) - np.array(y[-fc-1:-1])) != 0:
-        print(Y[-fc:], y[-fc-1:-1])
+    print(len(Y), len(y))
+    print(Y[-fc+1:], '\n', y[-fc:-1], len(y[-fc:-1]))
+    if sum(np.array(Y[-fc+1:]) - np.array(y[-fc:-1])) != 0:
+        # print(Y[-fc:], y[-fc:])
         raise Exception('预测值Y和y不相等')
 
-    if sum(np.array(Y[-fc:]) - np.array(y[-fc-1:-1])) != 0:
-        print(Y[-fc:], y[-fc-1:-1])
-        raise Exception('预测值Y和y不相等')
-    if not ((len(a) == len(b) == len(y) == 1 + len(x) + fc) and (len(s) == m + len(x) + fc)):
+    # if sum(np.array(Y[-fc:]) - np.array(y[-fc-1:-1])) != 0:
+    #     print(Y[-fc:], y[-fc-1:-1])
+    #     raise Exception('预测值Y和y不相等')
+    if not ((len(a) -1 == len(b) -1 == len(y) == len(x) + fc - 1) and (len(s) == m + len(x) + fc - 1)):
         print(s)
         raise Exception('分项长度有误，不能使用季节项序列')
 
-    rmse_index = rmse(Y[1:-fc], y[1:-fc - 1])
-    aic_index = aic(Y[1:-fc], y[1:-fc - 1], 3)
-    std_residual = np.nanstd([(m - n) for m, n in zip(Y[1:-fc], y[1:-fc - 1])])
+    rmse_index = rmse(Y[1:-fc+1], y[:-fc])
+    aic_index = aic(Y[1:-fc+1], y[:-fc], 3)
+    std_residual = np.nanstd([(m - n) for m, n in zip(Y[1:-fc+1], y[:-fc])])
 
-    return {'predict': y[-fc-1:-1], 'alpha': alpha, 'beta': beta, 'gamma': gamma, 'rmse': rmse_index, 'aic': aic_index,
+    return {'predict': y[-fc:], 'alpha': alpha, 'beta': beta, 'gamma': gamma, 'rmse': rmse_index, 'aic': aic_index,
             'std_residual': std_residual, 'max(s)': max(s), 'min(s)': min(s), 'mean(s)': np.mean(s), 'seasonal': s,
-            'fittedvalues': y[:-fc-1], 'weights': weights}
+            'fittedvalues': y[:-fc], 'weights': weights}
+
+# day = list(np.random.randint(1, 10, 730))
+# print(additive(day, 365, 28))
 
 
 def multiplicative(x, m, fc, alpha=None, beta=None, gamma=None,
@@ -2299,7 +2308,7 @@ def ExponentialSmoothingModels(x, granularity='day', m_year=365-7*1, m_week=7, m
             'mean(s_quarter)': np.mean(s_quarter), 'np.std(s_quarter)': np.std(s_quarter), 's_week_75': np.percentile(s_quarter, 75),
             's_week_25': np.percentile(s_quarter, 25), 's_week_50': np.percentile(s_quarter, 50)}
 
-ExponentialSmoothingModels([1,2,3], granularity='day',)
+# ExponentialSmoothingModels([1,2,3], granularity='day',)
 # ExponentialSmoothingModels([1,2,3], granularity='day', model='simple', initial_values=[0.2], boundaries=[(0,1)])
 
 # comoare_func需调整，因为AIC是经验公式，其不同形式适用于不同条件下两条序列近似度的比较，可靠性低于属于理论公式的RMSE，不应作为首要判断条件。
@@ -2309,24 +2318,160 @@ ExponentialSmoothingModels([1,2,3], granularity='day',)
 
 # n = 100
 # np.random.seed(500)
-if __name__ == "__main__":
-    day = list(np.random.randint(1, 10, 730))
-    week = list(np.random.randint(1, 10, 104))
-    a = simple(day, 4)
-    print('simple', a, '\n')
-    b = linear(day, 4)
-    print('linear', b, '\n')
-    c = double_mul(day, 4)
-    print('double_mul', c, '\n')
-    d = additive(day, 365, 4)
-    print('additive', d, '\n')
-    e = multiplicative(day, 365, 4)
-    print('multiplicative', e, '\n')
-    g1 = multi_seasonal_add_day(day)
-    print('multiseasonal_add_day', g1, '\n')
-    g2 = multi_seasonal_add_week(week)
-    print('multiseasonal_add_week', g2, '\n')
-    g3 = multi_seasonal_mul_day(day)
-    print('multiseasonal_mul_day', g3, '\n')
-    g4 = multi_seasonal_mul_week(week)
-    print('multiseasonal_mul_week', g4)
+# if __name__ == "__main__":
+    # day = list(np.random.randint(1, 10, 730))
+    # week = list(np.random.randint(1, 10, 104))
+    # a = simple(day, 4)
+    # print('simple', a, '\n')
+    # b = linear(day, 4)
+    # print('linear', b, '\n')
+    # c = double_mul(day, 4)
+    # print('double_mul', c, '\n')
+    # d = additive(day, 365, 4)
+    # print('additive', d, '\n')
+    # e = multiplicative(day, 365, 4)
+    # print('multiplicative', e, '\n')
+    # g1 = multi_seasonal_add_day(day)
+    # print('multiseasonal_add_day', g1, '\n')
+    # g2 = multi_seasonal_add_week(week)
+    # print('multiseasonal_add_week', g2, '\n')
+    # g3 = multi_seasonal_mul_day(day)
+    # print('multiseasonal_mul_day', g3, '\n')
+    # g4 = multi_seasonal_mul_week(week)
+    # print('multiseasonal_mul_week', g4)
+
+
+import random
+import pandas as pd
+import matplotlib.pyplot as plt
+
+up_limit = 20  # 设置level、trend、season项的取值上限
+steps_day, steps_week = 28, 4
+length = [730+steps_day, 365+steps_day, 104+steps_week, 52+steps_week] # 代表每个序列的长度，分别为周、日序列的一年及两年。
+y_level, y_trend, y_season, y_noise, y_input_add, y_input_mul = [[]] * len(length), [[]] * len(length), [[]] * len(length), [[]] * len(length), [[]] * len(length), [[]] * len(length)
+
+weights = []
+for i in range(-up_limit+1, 1):
+    weights.append(0.6 ** i)  # 设置y_level项随机序列的权重呈递减指数分布，底数越小，y_level中较小值所占比例越大。
+weights = np.array(weights)
+
+##########################################################
+
+# 用正弦函数模拟加法多重季节性，并设置level，trend，noise分项
+# y_season[0]是两年日序列的季节项，有两年、八个季度、24个月、104周共四个季节性分项
+y_season[0] = 4 * (1/2*np.sin(np.linspace(0, 2*2*np.pi*(1+28/730), length[0]))
+                   + 1/3*np.cos(np.linspace(0, 8*2*np.pi*(1+28/730), length[0]))
+                   + 1/4*np.sin(np.linspace(0, 24*2*np.pi*(1+28/730), length[0]))
+                   + 1/5*np.cos(np.linspace(0, 104*2*np.pi*(1+28/730), length[0])))
+# y_season[1]是一年日序列的季节项，有一年、四个季度、12个月、52周共四个季节性分项
+y_season[1] = 4 * (1/2*np.sin(np.linspace(0, 1*2*np.pi*(1+28/365), length[1]))
+                   + 1/3*np.cos(np.linspace(0, 4*2*np.pi*(1+28/365), length[1]))
+                   + 1/4*np.sin(np.linspace(0, 12*2*np.pi*(1+28/365), length[1]))
+                   + 1/5*np.cos(np.linspace(0, 52*2*np.pi*(1+28/365), length[1])))
+# y_season[2]是两年周序列的季节项，有两年、八个季度、24个月共三个季节性分项
+y_season[2] = 3 * (np.sin(np.linspace(0, 2*2*np.pi*(1+4/104), length[2]))
+                   + 1/2*np.cos(np.linspace(0, 8*2*np.pi*(1+4/104), length[2]))
+                   + 1/3*np.sin(np.linspace(0, 24*2*np.pi*(1+4/104), length[2])))
+# y_season[3]是一年周序列的季节项，有一年、四个季度、12个月共三个季节性分项
+y_season[3] = 3 * (np.sin(np.linspace(0, 1*2*np.pi*(1+4/52), length[3]))
+                   + 1/2*np.cos(np.linspace(0, 4*2*np.pi*(1+4/52), length[3]))
+                   + 1/3*np.sin(np.linspace(0, 12*2*np.pi*(1+4/52), length[3])))
+for i in range(0, len(length)):
+    y_level[i] = np.array(random.choices(range(0, up_limit), weights=weights, k=length[i])) / 5 + 5  # 用指数权重分布随机数模拟基础项
+    y_trend[i] = 2*max(y_season[i]) + np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])) + (min(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i]))) +
+                 max(np.log2(np.linspace(2, 2**(up_limit/8), num=length[i])))) / length[i] * np.linspace(1, length[i], num=length[i]) # 用对数函数与线性函数的均值模拟趋势性
+    y_noise[i] = np.random.normal(0, 1, length[i]) / 5  # 假定数据处于理想状态，并使噪音以加法方式进入模型，则可令噪音在0附近呈正态分布。
+    y_input_add[i] = y_level[i] + y_trend[i] + y_season[i] + y_noise[i]  # 假定各项以加法方式组成输入数据
+
+    y_level[i] = pd.Series(y_level[i]).rename('y_level')
+    y_trend[i] = pd.Series(y_trend[i]).rename('y_trend')
+    y_season[i] = pd.Series(y_season[i]).rename('y_season')
+    y_noise[i] = pd.Series(y_noise[i]).rename('y_noise')
+    y_input_add[i] = pd.Series(y_input_add[i]).rename('y_input_add')
+    y_input_add[i][y_input_add[i] < 0] = 0
+
+# # 绘制四条加法季节性时间序列
+# plt.figure('add: 730+28', figsize=(20, 10))
+# ax1 = plt.subplot(5,1,1)
+# xlim = plt.gca().set_xlim(0, length[0]-1)
+# ax2 = plt.subplot(5,1,2)
+# xlim = plt.gca().set_xlim(0, length[0]-1)
+# ax3 = plt.subplot(5,1,3)
+# xlim = plt.gca().set_xlim(0, length[0]-1)
+# ax4 = plt.subplot(5,1,4)
+# xlim = plt.gca().set_xlim(0, length[0]-1)
+# ax5 = plt.subplot(5,1,5)
+# xlim = plt.gca().set_xlim(0, length[0]-1)
+# y_input_add[0].plot(ax=ax1, legend=True)
+# y_level[0].plot(ax=ax2, legend=True)
+# y_trend[0].plot(ax=ax3, legend=True)
+# y_season[0].plot(ax=ax4, legend=True)
+# y_noise[0].plot(ax=ax5, legend=True)
+# plt.show()
+#
+# plt.figure('add: 365+28', figsize=(20, 10))
+# ax1 = plt.subplot(5,1,1)
+# xlim = plt.gca().set_xlim(0, length[1]-1)
+# ax2 = plt.subplot(5,1,2)
+# xlim = plt.gca().set_xlim(0, length[1]-1)
+# ax3 = plt.subplot(5,1,3)
+# xlim = plt.gca().set_xlim(0, length[1]-1)
+# ax4 = plt.subplot(5,1,4)
+# xlim = plt.gca().set_xlim(0, length[1]-1)
+# ax5 = plt.subplot(5,1,5)
+# xlim = plt.gca().set_xlim(0, length[1]-1)
+# y_input_add[1].plot(ax=ax1, legend=True)
+# y_level[1].plot(ax=ax2, legend=True)
+# y_trend[1].plot(ax=ax3, legend=True)
+# y_season[1].plot(ax=ax4, legend=True)
+# y_noise[1].plot(ax=ax5, legend=True)
+# plt.show()
+#
+# plt.figure('add: 104+4', figsize=(20, 10))
+# ax1 = plt.subplot(5,1,1)
+# xlim = plt.gca().set_xlim(0, length[2]-1)
+# ax2 = plt.subplot(5,1,2)
+# xlim = plt.gca().set_xlim(0, length[2]-1)
+# ax3 = plt.subplot(5,1,3)
+# xlim = plt.gca().set_xlim(0, length[2]-1)
+# ax4 = plt.subplot(5,1,4)
+# xlim = plt.gca().set_xlim(0, length[2]-1)
+# ax5 = plt.subplot(5,1,5)
+# xlim = plt.gca().set_xlim(0, length[2]-1)
+# y_input_add[2].plot(ax=ax1, legend=True)
+# y_level[2].plot(ax=ax2, legend=True)
+# y_trend[2].plot(ax=ax3, legend=True)
+# y_season[2].plot(ax=ax4, legend=True)
+# y_noise[2].plot(ax=ax5, legend=True)
+# plt.show()
+#
+# plt.figure('add: 52+4', figsize=(20, 10))
+# ax1 = plt.subplot(5,1,1)
+# xlim = plt.gca().set_xlim(0, length[3]-1)
+# ax2 = plt.subplot(5,1,2)
+# xlim = plt.gca().set_xlim(0, length[3]-1)
+# ax3 = plt.subplot(5,1,3)
+# xlim = plt.gca().set_xlim(0, length[3]-1)
+# ax4 = plt.subplot(5,1,4)
+# xlim = plt.gca().set_xlim(0, length[3]-1)
+# ax5 = plt.subplot(5,1,5)
+# xlim = plt.gca().set_xlim(0, length[3])
+# y_input_add[3].plot(ax=ax1, legend=True)
+# y_level[3].plot(ax=ax2, legend=True)
+# y_trend[3].plot(ax=ax3, legend=True)
+# y_season[3].plot(ax=ax4, legend=True)
+# y_noise[3].plot(ax=ax5, legend=True)
+# plt.show()
+
+
+y = y_input_add[0]
+results = additive(y[:int(730/1)].values, m=360, fc=28, boundaries=[(0.1, 0.3), (0.1, 0.3), (0.3, 0.5)])
+# print figures
+plt.figure('730+28+ExponentialSmoothing y_input_add', figsize=(20,10))
+ax_HoltWinters = y_input_add[0].rename('y_input_add[0]').plot(color='k', legend='True')
+ax_HoltWinters.set_ylabel("amount")
+ax_HoltWinters.set_xlabel("day")
+xlim = plt.gca().set_xlim(0, len(y)-1)
+pd.Series(results['fittedvalues']).plot(ax=ax_HoltWinters, color='red')
+pd.Series(results['predict'], index=range(len(results['fittedvalues']), len(results['fittedvalues'])+28)).rename('HW_add_add').plot(ax=ax_HoltWinters, color='red', legend=True)
+plt.show()
