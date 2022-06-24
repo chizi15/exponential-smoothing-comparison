@@ -14,7 +14,7 @@ from errorcalculation import aic as Aic
 from errorcalculation import ds as Ds
 from errorcalculation import stde as Stde
 
-
+"""
 def outlier_dealing(timeseries):
     '''
         异常处理函数
@@ -53,16 +53,74 @@ def outlier_dealing(timeseries):
         for idx in range(len(ts_diff) - 1):
 
             if idx == 0:
-                if ts_diff.ix[idx] > st_up or ts_diff.ix[idx] < st_down:
+                if ts_diff.loc[idx] > st_up or ts_diff.loc[idx] < st_down:
                     # 第一个差分点出判定区，对应原序列的第一个点就是异常点
-                    timeseries.ix[idx] = np.mean(timeseries.values[1:]) # 后面N周的均值
+                    timeseries.loc[idx] = np.mean(timeseries.values[1:]) # 后面N周的均值
 
-            if ts_diff.ix[idx] > st_up or ts_diff.ix[idx] < st_down:
-                if ts_diff.ix[idx + 1] > st_up or ts_diff.ix[idx + 1] < st_down:
+            if ts_diff.loc[idx] > st_up or ts_diff.loc[idx] < st_down:
+                if ts_diff.loc[idx + 1] > st_up or ts_diff.loc[idx + 1] < st_down:
                     # 连续两个点出判定区间，则第一个点是异常点
                     # idx为差分异常点索引,对应原序列索引加1
-                    timeseries.ix[idx + 1] = np.nan  # 原序列异常点用空值代替
+                    timeseries.loc[idx + 1] = np.nan  # 原序列异常点用空值代替
                     flag = True  # 改变标记值
+
+        timeseries.interpolate(inplace=True)  # 插值填充原序列
+        loop += 1
+        # print('第 {0} 次循环,可能还要再次循环...'.format(loop))
+    print('循环结束了,总共进行了 {0} 次循环..'.format(loop))
+    return list(timeseries.values)
+"""
+
+def outlier_dealing(timeseries):
+    '''
+        异常处理函数
+        parameters:
+            --------
+            timeseries:时间序列数据或者普通列表数据
+
+        return:
+            --------
+            timeseries.values:处理后序列值
+    '''
+    timeseries = timeseries.copy()
+    if isinstance(timeseries, pd.Series):
+        timeseries.index = range(len(timeseries))  # 改变索引为从0开始的数值索引
+    else:
+        timeseries = pd.Series(timeseries, index=range(len(timeseries)))
+
+    flag = True
+    loop = 0
+    # while flag:
+    while loop < 4:
+        ts_diff = timeseries.diff()  # 差分序列
+        ts_diff.dropna(inplace=True)
+        ts_diff.index = range(len(ts_diff))
+
+        ts_diff_mean = ts_diff.mean()  # 差分均值
+        ts_diff_std = ts_diff.std()   # 标准差
+
+        # 上下区间
+        st_up = ts_diff_mean + 1.96 * ts_diff_std
+        st_down = ts_diff_mean - 1.96 * ts_diff_std
+        # print('均值及标准差:',ts_diff_mean, ts_diff_std)
+        # print('上下区间:',st_up,st_down)
+
+        # 判断差分序列是否出判定区间 # 连续两个点出判定区间，则第一个点是异常点
+        diff_out_range = ts_diff.apply(lambda x: True if (x > st_up) or (x < st_down) else False)
+        # 上偏移一位
+        diff_out_range_shift = diff_out_range.shift(-1)
+        # 两series 横向concat, columns 为[0,1]
+        concat_df = pd.concat([diff_out_range, diff_out_range_shift], axis=1)
+        # 筛选出差分序列异常点索引, 两列同时为True则为异常点,对应原序列索引加1
+        outlier_sr = concat_df.apply(lambda x: True if x[0] and x[1] else False, axis=1)
+        outlier_idx = outlier_sr[outlier_sr == True].index
+        # 原序列异常点用空值代替
+        timeseries.loc[[(li+1) for li in outlier_idx]] = np.nan
+
+        # 差分序列第一个点为异常点,但第二个点不是异常点,那么原始序列第一个点也就是异常点
+        # 用原始序列除开第一个点的均值代替
+        if diff_out_range[0] and not diff_out_range[1]:
+            timeseries.loc[0] = np.nanmean(timeseries.values[1:])
 
         timeseries.interpolate(inplace=True)  # 插值填充原序列
         loop += 1
@@ -181,6 +239,7 @@ def simple(x, fc, alpha=None):
         parameters = fmin_l_bfgs_b(RMSE, x0=initial_values, args=(Y, type), bounds=boundaries, approx_grad=True)
         alpha = parameters[0][0]
 
+    print(alpha)
     a = [Y[0]]  # 求和
     y = [a[0]]  # 预测列
     rmse = 0
@@ -198,7 +257,7 @@ def simple(x, fc, alpha=None):
     ds = Ds(Y[:-fc], y[:-fc - 1])
     prestd = Stde([(m - n) for m, n in zip(Y[:-fc], y[:-fc - 1])])
 
-    return {'pred': Y[-fc:], 'alpha': alpha, 'rmse': rmse, 'aic':aic, 'ds':ds, 'prestd':prestd, 'fittedvalues': y[1:-fc]}
+    return {'pred': Y[-fc:], 'alpha': alpha, 'rmse': rmse, 'aic':aic, 'ds':ds, 'prestd':prestd, 'fittedvalues': y[:-fc-1]}
 
 
 def linear(x, fc, alpha=None, beta=None):
@@ -234,6 +293,7 @@ def linear(x, fc, alpha=None, beta=None):
         parameters = fmin_l_bfgs_b(RMSE, x0=initial_values, args=(Y, type), bounds=boundaries, approx_grad=True)
         alpha, beta = parameters[0]
 
+    print(alpha, beta)
     a = [Y[0]]
     b = [Y[1] - Y[0]]
     y = [a[0] + b[0]]
@@ -254,7 +314,7 @@ def linear(x, fc, alpha=None, beta=None):
     ds = Ds(Y[:-fc], y[:-fc - 1])
     prestd = Stde([(m - n) for m, n in zip(Y[:-fc], y[:-fc - 1])])
 
-    return {'pred': Y[-fc:], 'alpha': alpha, 'beta': beta, 'rmse': rmse, 'aic':aic, 'ds':ds, 'prestd':prestd, 'fittedvalues': y[1:-fc]}
+    return {'pred': Y[-fc:], 'alpha': alpha, 'beta': beta, 'rmse': rmse, 'aic':aic, 'ds':ds, 'prestd':prestd, 'fittedvalues': y[:-fc-1]}
 
 
 def additive(x, m, fc, alpha=None, beta=None, gamma=None):
@@ -292,6 +352,7 @@ def additive(x, m, fc, alpha=None, beta=None, gamma=None):
         parameters = fmin_l_bfgs_b(RMSE, x0=initial_values, args=(Y, type, m), bounds=boundaries, approx_grad=True)
         alpha, beta, gamma = parameters[0]
 
+    print(alpha, beta, gamma)
     a = [sum(Y[0:m]) / float(m)]
     b = [(sum(Y[m:2 * m]) - sum(Y[0:m])) / m ** 2]
     s = [Y[i] - a[0] for i in range(m)]
@@ -314,8 +375,8 @@ def additive(x, m, fc, alpha=None, beta=None, gamma=None):
     ds = Ds(Y[:-fc], y[:-fc - 1])
     prestd = Stde([(m - n) for m, n in zip(Y[:-fc], y[:-fc - 1])])
 
-    return {'pred': Y[-fc:], 'alpha': alpha, 'beta': beta, 'gamma': gamma,
-            'rmse': rmse, 'aic':aic, 'ds':ds, 'prestd':prestd, 'fittedvalues': y[1:-fc]}
+    return {'pred': Y[-fc:], 'alpha': alpha, 'beta': beta, 'gamma': gamma, 'rmse': rmse, 'aic':aic, 'ds':ds,
+            'prestd':prestd, 'fittedvalues': y[:-fc-1]}
 
 
 def multiplicative(x, m, fc, alpha=None, beta=None, gamma=None):
@@ -353,6 +414,7 @@ def multiplicative(x, m, fc, alpha=None, beta=None, gamma=None):
         parameters = fmin_l_bfgs_b(RMSE, x0=initial_values, args=(Y, type, m), bounds=boundaries, approx_grad=True)
         alpha, beta, gamma = parameters[0]
 
+    print(alpha, beta, gamma)
     a = [sum(Y[0:m]) / float(m)]
     b = [(sum(Y[m:2 * m]) - sum(Y[0:m])) / m ** 2]
     s = [Y[i] / a[0] for i in range(m)]
@@ -375,8 +437,8 @@ def multiplicative(x, m, fc, alpha=None, beta=None, gamma=None):
     ds = Ds(Y[:-fc], y[:-fc - 1])
     prestd = Stde([(m - n) for m, n in zip(Y[:-fc], y[:-fc - 1])])
 
-    return {'pred': Y[-fc:], 'alpha': alpha, 'beta': beta, 'gamma': gamma,
-            'rmse': rmse, 'aic':aic, 'ds':ds, 'prestd':prestd, 'fittedvalues': y[1:-fc]}
+    return {'pred': Y[-fc:], 'alpha': alpha, 'beta': beta, 'gamma': gamma, 'rmse': rmse, 'aic':aic, 'ds':ds,
+            'prestd':prestd, 'fittedvalues': y[:-fc-1]}
 
 
 def multiplicative_seasonal(x, m, fc, alpha = None, beta = None, gamma = None):
@@ -394,6 +456,7 @@ def multiplicative_seasonal(x, m, fc, alpha = None, beta = None, gamma = None):
         parameters = fmin_l_bfgs_b(RMSE, x0 = initial_values, args = (Y, type, m), bounds = boundaries, approx_grad = True)
         alpha, beta, gamma = parameters[0]
 
+    print(alpha, beta, gamma)
     a = [sum(Y[0:m]) / float(m)]
     b = [(sum(Y[m:2 * m]) - sum(Y[0:m])) / m ** 2]
     s = [Y[i] / a[0] for i in range(m)]
@@ -413,8 +476,7 @@ def multiplicative_seasonal(x, m, fc, alpha = None, beta = None, gamma = None):
     # rmse = sqrt(sum([(m - n) ** 2 for m, n in zip(Y[:-fc], y[:-fc - 1])]) / len(Y[:-fc]))
     rmse = Rmse(Y[:-fc], y[:-fc - 1])
 
-    return {'pred': Y[-fc:], 'alpha': alpha, 'beta': beta, 'gamma': gamma,
-            'rmse': rmse, 'seasonal': s, 'fittedvalues': y[1:-fc]}
+    return {'pred': Y[-fc:], 'alpha': alpha, 'beta': beta, 'gamma': gamma, 'rmse': rmse, 'seasonal': s, 'fittedvalues': y[:-fc-1]}
 
 
 def compare_func(x, m, fc):
