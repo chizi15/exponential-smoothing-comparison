@@ -82,23 +82,17 @@ y_level[0].plot(ax=ax2, legend=True)
 y_trend[0].plot(ax=ax3, legend=True)
 y_season[0].plot(ax=ax4, legend=True)
 y_noise[0].plot(ax=ax5, legend=True)
-plt.show()
 
 # 绘制STL分解序列；period, seasonal, trend must be odd.
 STL(y_input_add[0], period=365, seasonal=7, trend=(730+steps_day) + (((730+steps_day) % 2) == 0)).fit().plot()
-plt.show()
 
 # Seasonal decomposition using moving averages
 # 先分解小周期，则seasonal项具有强规律性，即可对trend项进行再分解
 sdma_1 = seasonal_decompose(y_input_add[2][0:104], model='add', period=4, two_sided=False)
 sdma_1.plot()
-plt.show()
-
 sdma_trend_1 = sdma_1.trend.dropna().reset_index(drop=True)
 sdma_2 = seasonal_decompose(sdma_trend_1, model='add', period=13, two_sided=False)
 sdma_2.plot()
-plt.show()
-
 sdma_trend_2 = sdma_2.trend.dropna().reset_index(drop=True)
 
 forecast = sdma_1.seasonal[:steps_week].values + sdma_2.seasonal[:steps_week].values + ExponentialSmoothing(sdma_trend_2, trend='add', seasonal='add', seasonal_periods=26).fit().forecast(steps_week).values
@@ -106,13 +100,9 @@ forecast = sdma_1.seasonal[:steps_week].values + sdma_2.seasonal[:steps_week].va
 # 先分解大周期，则trend项具有强规律性，即可对seasonal项进行再分解
 sdma_1 = seasonal_decompose(y_input_add[2][0:104], model='add', period=52, two_sided=False)
 sdma_1.plot()
-plt.show()
-
 sdma_seasonal_1 = sdma_1.seasonal.dropna().reset_index(drop=True)
 sdma_2 = seasonal_decompose(sdma_seasonal_1, model='add', period=13, two_sided=False)
 sdma_2.plot()
-plt.show()
-
 sdma_trend_2 = sdma_2.seasonal.dropna().reset_index(drop=True)
 
 
@@ -132,11 +122,8 @@ y_level[1].plot(ax=ax2, legend=True)
 y_trend[1].plot(ax=ax3, legend=True)
 y_season[1].plot(ax=ax4, legend=True)
 y_noise[1].plot(ax=ax5, legend=True)
-plt.show()
-
 # 绘制STL分解序列；period, seasonal, trend must be odd.
 STL(y_input_add[1], period=365, seasonal=7, trend=(365+28) + (((365+28) % 2) == 0)).fit().plot()
-plt.show()
 
 plt.figure('add: 104+4')
 ax1 = plt.subplot(5,1,1)
@@ -154,11 +141,8 @@ y_level[2].plot(ax=ax2, legend=True)
 y_trend[2].plot(ax=ax3, legend=True)
 y_season[2].plot(ax=ax4, legend=True)
 y_noise[2].plot(ax=ax5, legend=True)
-plt.show()
-
 # 绘制STL分解序列；period, seasonal, trend must be odd.
 STL(y_input_add[2], period=52, seasonal=int(52/4), trend=(104+4) + (((104+4) % 2) == 0)).fit().plot()
-plt.show()
 
 plt.figure('add: 52+4')
 ax1 = plt.subplot(5,1,1)
@@ -176,11 +160,8 @@ y_level[3].plot(ax=ax2, legend=True)
 y_trend[3].plot(ax=ax3, legend=True)
 y_season[3].plot(ax=ax4, legend=True)
 y_noise[3].plot(ax=ax5, legend=True)
-plt.show()
-
 # 绘制STL分解序列；period, seasonal, trend must be odd.
 STL(y_input_add[3], period=52, seasonal=int(52/4), trend=(52+4) + (((52+4) % 2) == 0)).fit().plot()
-plt.show()
 
 ######################################################################
 
@@ -235,11 +216,8 @@ y_level[0].plot(ax=ax2, legend=True)
 y_trend[0].plot(ax=ax3, legend=True)
 y_season[0].plot(ax=ax4, legend=True)
 y_noise[0].plot(ax=ax5, legend=True)
-plt.show()
-
 # 绘制STL分解序列；period, seasonal, trend must be odd.
 STL(y_input_mul[0], period=365, seasonal=7, trend=(730+28) + (((730+28) % 2) == 0)).fit().plot()
-plt.show()
 
 plt.figure('mul: 365+28')
 ax1 = plt.subplot(5,1,1)
@@ -257,11 +235,8 @@ y_level[1].plot(ax=ax2, legend=True)
 y_trend[1].plot(ax=ax3, legend=True)
 y_season[1].plot(ax=ax4, legend=True)
 y_noise[1].plot(ax=ax5, legend=True)
-plt.show()
-
 # 绘制STL分解序列；period, seasonal, trend must be odd.
 STL(y_input_mul[1], period=365, seasonal=7, trend=(365+28) + (((365+28) % 2) == 0)).fit().plot()
-plt.show()
 
 plt.figure('mul: 104+4')
 ax1 = plt.subplot(5,1,1)
@@ -279,11 +254,8 @@ y_level[2].plot(ax=ax2, legend=True)
 y_trend[2].plot(ax=ax3, legend=True)
 y_season[2].plot(ax=ax4, legend=True)
 y_noise[2].plot(ax=ax5, legend=True)
-plt.show()
-
 # 绘制STL分解序列；period, seasonal, trend must be odd.
 STL(y_input_mul[2], period=52, seasonal=int(52/4), trend=(104+4) + (((104+4) % 2) == 0)).fit().plot()
-plt.show()
 
 plt.figure('mul: 52+4')
 ax1 = plt.subplot(5,1,1)
@@ -301,8 +273,5 @@ y_level[3].plot(ax=ax2, legend=True)
 y_trend[3].plot(ax=ax3, legend=True)
 y_season[3].plot(ax=ax4, legend=True)
 y_noise[3].plot(ax=ax5, legend=True)
-plt.show()
-
 # 绘制STL分解序列；period, seasonal, trend must be odd.
 STL(y_input_mul[3], period=52, seasonal=int(52/4), trend=(52+4) + (((52+4) % 2) == 0)).fit().plot()
-plt.show()

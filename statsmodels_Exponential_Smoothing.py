@@ -57,10 +57,11 @@ statsmodels中可使用如下模型1：SimpleExpSmoothing().fit(optimized=True, 
 6：ExponentialSmoothing(trend='add', seasonal='mul', damped_trend=True).fit(ƒ=趋近于1的小数, use_boxcox=None, method='basinhopping', use_brute=False)
 """
 
+
 import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.holtwinters import SimpleExpSmoothing, Holt, ExponentialSmoothing
-import test_smoothing_models
+import smoothing_models
 import wualgorithm
 import numpy as np
 import random
@@ -134,7 +135,6 @@ y_level[0].plot(ax=ax2, legend=True)
 y_trend[0].plot(ax=ax3, legend=True)
 y_season[0].plot(ax=ax4, legend=True)
 y_noise[0].plot(ax=ax5, legend=True)
-plt.show()
 
 plt.figure('add: 365+28', figsize=(20,10))
 ax1 = plt.subplot(5,1,1)
@@ -152,7 +152,6 @@ y_level[1].plot(ax=ax2, legend=True)
 y_trend[1].plot(ax=ax3, legend=True)
 y_season[1].plot(ax=ax4, legend=True)
 y_noise[1].plot(ax=ax5, legend=True)
-plt.show()
 
 plt.figure('add: 104+4', figsize=(20,10))
 ax1 = plt.subplot(5,1,1)
@@ -170,7 +169,6 @@ y_level[2].plot(ax=ax2, legend=True)
 y_trend[2].plot(ax=ax3, legend=True)
 y_season[2].plot(ax=ax4, legend=True)
 y_noise[2].plot(ax=ax5, legend=True)
-plt.show()
 
 plt.figure('add: 52+4', figsize=(20,10))
 ax1 = plt.subplot(5,1,1)
@@ -188,7 +186,6 @@ y_level[3].plot(ax=ax2, legend=True)
 y_trend[3].plot(ax=ax3, legend=True)
 y_season[3].plot(ax=ax4, legend=True)
 y_noise[3].plot(ax=ax5, legend=True)
-plt.show()
 
 ##########################################################
 
@@ -243,7 +240,6 @@ y_level[0].plot(ax=ax2, legend=True)
 y_trend[0].plot(ax=ax3, legend=True)
 y_season[0].plot(ax=ax4, legend=True)
 y_noise[0].plot(ax=ax5, legend=True)
-plt.show()
 
 plt.figure('mul: 365+28', figsize=(20,10))
 ax1 = plt.subplot(5,1,1)
@@ -261,7 +257,6 @@ y_level[1].plot(ax=ax2, legend=True)
 y_trend[1].plot(ax=ax3, legend=True)
 y_season[1].plot(ax=ax4, legend=True)
 y_noise[1].plot(ax=ax5, legend=True)
-plt.show()
 
 plt.figure('mul: 104+4', figsize=(20,10))
 ax1 = plt.subplot(5,1,1)
@@ -279,7 +274,6 @@ y_level[2].plot(ax=ax2, legend=True)
 y_trend[2].plot(ax=ax3, legend=True)
 y_season[2].plot(ax=ax4, legend=True)
 y_noise[2].plot(ax=ax5, legend=True)
-plt.show()
 
 plt.figure('mul: 52+4', figsize=(20,10))
 ax1 = plt.subplot(5,1,1)
@@ -297,7 +291,6 @@ y_level[3].plot(ax=ax2, legend=True)
 y_trend[3].plot(ax=ax3, legend=True)
 y_season[3].plot(ax=ax4, legend=True)
 y_noise[3].plot(ax=ax5, legend=True)
-plt.show()
 
 #############################--------------set up and plot input data-----------------#############################
 
@@ -327,7 +320,6 @@ fit_SES.fittedvalues.plot(ax=ax_SES, color='b')
 fit_SES_train.fittedvalues.plot(ax=ax_SES, color='r')
 fit_SES.forecast(steps_day).rename(r'$\alpha=%s$'%fit_SES.model.params['smoothing_level']).plot(ax=ax_SES, color='b', legend=True)
 fit_SES_train.forecast(steps_day).rename(r'$\alpha=%s$'%fit_SES_train.model.params['smoothing_level']).plot(ax=ax_SES, color='r', legend=True)
-plt.show()
 
 # 计算各模型MASE值，小于1启用，否则弃用；各点偏差比的权重按由近及远递减；此处采用naive作为benchmark。
 MASE_SES = sum(abs((fit_SES.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values) / (y_input_add[0][730-1:730-1+steps_day].values - y_input_add[0][730:730+steps_day].values))
@@ -367,7 +359,6 @@ fit_SES.fittedvalues.plot(ax=ax_SES, color='blue')
 fit_SES_train.fittedvalues.plot(ax=ax_SES, color='red')
 fit_SES.forecast(steps_day).rename(r'$\alpha=%s$'%fit_SES.model.params['smoothing_level']).plot(ax=ax_SES, color='b', legend=True)
 fit_SES_train.forecast(steps_day).rename(r'$\alpha=%s$'%fit_SES_train.model.params['smoothing_level']).plot(ax=ax_SES, color='red', legend=True)
-plt.show()
 
 MASE_SES = sum(abs((fit_SES.forecast(steps_day).values - y_input_add[1][365:365+steps_day].values) / (y_input_add[1][365-1:365-1+steps_day].values - y_input_add[1][365:365+steps_day].values))
     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))
@@ -406,7 +397,6 @@ fit_SES.fittedvalues.plot(ax=ax_SES, color='blue')
 fit_SES_train.fittedvalues.plot(ax=ax_SES, color='red')
 fit_SES.forecast(steps_week).rename(r'$\alpha=%s$'%fit_SES.model.params['smoothing_level']).plot(ax=ax_SES, color='b', legend=True)
 fit_SES_train.forecast(steps_week).rename(r'$\alpha=%s$'%fit_SES_train.model.params['smoothing_level']).plot(ax=ax_SES, color='red', legend=True)
-plt.show()
 
 MASE_SES = sum(abs((fit_SES.forecast(steps_week).values - y_input_add[2][104:104+steps_week].values) / (y_input_add[2][104-1:104-1+steps_week].values - y_input_add[2][104:104+steps_week].values))
     * (np.array(range(steps_week, 0, -1)) / sum(np.array(range(1, steps_week+1)))))
@@ -445,7 +435,6 @@ fit_SES.fittedvalues.plot(ax=ax_SES, color='blue')
 fit_SES_train.fittedvalues.plot(ax=ax_SES, color='red')
 fit_SES.forecast(steps_week).rename(r'$\alpha=%s$'%fit_SES.model.params['smoothing_level']).plot(ax=ax_SES, color='b', legend=True)
 fit_SES_train.forecast(steps_week).rename(r'$\alpha=%s$'%fit_SES_train.model.params['smoothing_level']).plot(ax=ax_SES, color='red', legend=True)
-plt.show()
 
 MASE_SES = sum(abs((fit_SES.forecast(steps_week).values - y_input_add[3][52:52+steps_week].values) / (y_input_add[3][52-1:52-1+steps_week].values - y_input_add[3][52:52+steps_week].values))
     * (np.array(range(steps_week, 0, -1)) / sum(np.array(range(1, steps_week+1)))))
@@ -484,7 +473,6 @@ fit_SES.fittedvalues.plot(ax=ax_SES, color='b')
 fit_SES_train.fittedvalues.plot(ax=ax_SES, color='r')
 fit_SES.forecast(steps_day).rename(r'$\alpha=%s$'%fit_SES.model.params['smoothing_level']).plot(ax=ax_SES, color='b', legend=True)
 fit_SES_train.forecast(steps_day).rename(r'$\alpha=%s$'%fit_SES_train.model.params['smoothing_level']).plot(ax=ax_SES, color='r', legend=True)
-plt.show()
 
 MASE_SES = sum(abs((fit_SES.forecast(steps_day).values - y_input_mul[0][730:730+steps_day].values) / (y_input_mul[0][730-1:730-1+steps_day].values - y_input_mul[0][730:730+steps_day].values))
     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))
@@ -523,7 +511,6 @@ fit_SES.fittedvalues.plot(ax=ax_SES, color='blue')
 fit_SES_train.fittedvalues.plot(ax=ax_SES, color='red')
 fit_SES.forecast(steps_day).rename(r'$\alpha=%s$'%fit_SES.model.params['smoothing_level']).plot(ax=ax_SES, color='b', legend=True)
 fit_SES_train.forecast(steps_day).rename(r'$\alpha=%s$'%fit_SES_train.model.params['smoothing_level']).plot(ax=ax_SES, color='red', legend=True)
-plt.show()
 
 MASE_SES = sum(abs((fit_SES.forecast(steps_day).values - y_input_mul[1][365:365+steps_day].values) / (y_input_mul[1][365-1:365-1+steps_day].values - y_input_mul[1][365:365+steps_day].values))
     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))
@@ -562,7 +549,6 @@ fit_SES.fittedvalues.plot(ax=ax_SES, color='blue')
 fit_SES_train.fittedvalues.plot(ax=ax_SES, color='red')
 fit_SES.forecast(steps_week).rename(r'$\alpha=%s$'%fit_SES.model.params['smoothing_level']).plot(ax=ax_SES, color='b', legend=True)
 fit_SES_train.forecast(steps_week).rename(r'$\alpha=%s$'%fit_SES_train.model.params['smoothing_level']).plot(ax=ax_SES, color='red', legend=True)
-plt.show()
 
 MASE_SES = sum(abs((fit_SES.forecast(steps_week).values - y_input_mul[2][104:104+steps_week].values) / (y_input_mul[2][104-1:104-1+steps_week].values - y_input_mul[2][104:104+steps_week].values))
     * (np.array(range(steps_week, 0, -1)) / sum(np.array(range(1, steps_week+1)))))
@@ -601,7 +587,6 @@ fit_SES.fittedvalues.plot(ax=ax_SES, color='blue')
 fit_SES_train.fittedvalues.plot(ax=ax_SES, color='red')
 fit_SES.forecast(steps_week).rename(r'$\alpha=%s$'%fit_SES.model.params['smoothing_level']).plot(ax=ax_SES, color='b', legend=True)
 fit_SES_train.forecast(steps_week).rename(r'$\alpha=%s$'%fit_SES_train.model.params['smoothing_level']).plot(ax=ax_SES, color='red', legend=True)
-plt.show()
 
 MASE_SES = sum(abs((fit_SES.forecast(steps_week).values - y_input_mul[3][52:52+steps_week].values) / (y_input_mul[3][52-1:52-1+steps_week].values - y_input_mul[3][52:52+steps_week].values))
     * (np.array(range(steps_week, 0, -1)) / sum(np.array(range(1, steps_week+1)))))
@@ -654,7 +639,6 @@ Holt_add_dam.forecast(steps_day).rename('Holt_add_dam').plot(ax=ax_Holt, color='
 Holt_add_dam_train.forecast(steps_day).rename('Holt_add_dam_train').plot(ax=ax_Holt, color='red', legend=True)
 Holt_mul_dam.forecast(steps_day).rename('Holt_mul_dam').plot(ax=ax_Holt, color='g', legend=True)
 Holt_mul_dam_train.forecast(steps_day).rename('Holt_mul_dam_train').plot(ax=ax_Holt, color='y', legend=True)
-plt.show()
 
 ##############################
 
@@ -686,7 +670,6 @@ Holt_add_dam.forecast(steps_day).rename('Holt_add_dam').plot(ax=ax_Holt, color='
 Holt_add_dam_train.forecast(steps_day).rename('Holt_add_dam_train').plot(ax=ax_Holt, color='red', legend=True)
 Holt_mul_dam.forecast(steps_day).rename('Holt_mul_dam').plot(ax=ax_Holt, color='g', legend=True)
 Holt_mul_dam_train.forecast(steps_day).rename('Holt_mul_dam_train').plot(ax=ax_Holt, color='y', legend=True)
-plt.show()
 
 ##############################
 
@@ -718,7 +701,6 @@ Holt_add_dam.forecast(steps_week).rename('Holt_add_dam').plot(ax=ax_Holt, color=
 Holt_add_dam_train.forecast(steps_week).rename('Holt_add_dam_train').plot(ax=ax_Holt, color='red', legend=True)
 Holt_mul_dam.forecast(steps_week).rename('Holt_mul_dam').plot(ax=ax_Holt, color='g', legend=True)
 Holt_mul_dam_train.forecast(steps_week).rename('Holt_mul_dam_train').plot(ax=ax_Holt, color='y', legend=True)
-plt.show()
 
 ##############################
 
@@ -750,7 +732,6 @@ Holt_add_dam.forecast(steps_week).rename('Holt_add_dam').plot(ax=ax_Holt, color=
 Holt_add_dam_train.forecast(steps_week).rename('Holt_add_dam_train').plot(ax=ax_Holt, color='red', legend=True)
 Holt_mul_dam.forecast(steps_week).rename('Holt_mul_dam').plot(ax=ax_Holt, color='g', legend=True)
 Holt_mul_dam_train.forecast(steps_week).rename('Holt_mul_dam_train').plot(ax=ax_Holt, color='y', legend=True)
-plt.show()
 
 ########################-----------Holt y_input_mul------------#########################
 
@@ -782,7 +763,6 @@ Holt_add_dam.forecast(steps_day).rename('Holt_add_dam').plot(ax=ax_Holt, color='
 Holt_add_dam_train.forecast(steps_day).rename('Holt_add_dam_train').plot(ax=ax_Holt, color='red', legend=True)
 Holt_mul_dam.forecast(steps_day).rename('Holt_mul_dam').plot(ax=ax_Holt, color='g', legend=True)
 Holt_mul_dam_train.forecast(steps_day).rename('Holt_mul_dam_train').plot(ax=ax_Holt, color='y', legend=True)
-plt.show()
 
 ##############################
 
@@ -814,7 +794,6 @@ Holt_add_dam.forecast(steps_day).rename('Holt_add_dam').plot(ax=ax_Holt, color='
 Holt_add_dam_train.forecast(steps_day).rename('Holt_add_dam_train').plot(ax=ax_Holt, color='red', legend=True)
 Holt_mul_dam.forecast(steps_day).rename('Holt_mul_dam').plot(ax=ax_Holt, color='g', legend=True)
 Holt_mul_dam_train.forecast(steps_day).rename('Holt_mul_dam_train').plot(ax=ax_Holt, color='y', legend=True)
-plt.show()
 
 ##############################
 
@@ -846,7 +825,6 @@ Holt_add_dam.forecast(steps_week).rename('Holt_add_dam').plot(ax=ax_Holt, color=
 Holt_add_dam_train.forecast(steps_week).rename('Holt_add_dam_train').plot(ax=ax_Holt, color='red', legend=True)
 Holt_mul_dam.forecast(steps_week).rename('Holt_mul_dam').plot(ax=ax_Holt, color='g', legend=True)
 Holt_mul_dam_train.forecast(steps_week).rename('Holt_mul_dam_train').plot(ax=ax_Holt, color='y', legend=True)
-plt.show()
 
 ##############################
 
@@ -878,7 +856,6 @@ Holt_add_dam.forecast(steps_week).rename('Holt_add_dam').plot(ax=ax_Holt, color=
 Holt_add_dam_train.forecast(steps_week).rename('Holt_add_dam_train').plot(ax=ax_Holt, color='red', legend=True)
 Holt_mul_dam.forecast(steps_week).rename('Holt_mul_dam').plot(ax=ax_Holt, color='g', legend=True)
 Holt_mul_dam_train.forecast(steps_week).rename('Holt_mul_dam_train').plot(ax=ax_Holt, color='y', legend=True)
-plt.show()
 
 #################################---------------Holt------------################################
 
@@ -909,7 +886,6 @@ HW_add_add_dam.forecast(steps_day).rename('HW_add_add_dam').plot(ax=ax_HoltWinte
 HW_add_mul_dam.forecast(steps_day).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
 HW_mul_add_dam.forecast(steps_day).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_day).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 # print parameters
 print()
@@ -985,117 +961,116 @@ if MASE_HW_mul_mul_dam < 1:
 else:
     print('HoltWinters_730 y_input_add，HW_mul_mul_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_mul_mul_dam))
 
-#######################------------global optimization------------#########################
-
-# fit models
-HW_add_add_dam = ExponentialSmoothing(y_input_add[0][0:730], seasonal_periods=365, trend='add', seasonal='add', damped_trend=True).\
-    fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
-HW_add_mul_dam = ExponentialSmoothing(y_input_add[0][0:730], seasonal_periods=365, trend='add', seasonal='mul', damped_trend=True).\
-    fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
-HW_mul_add_dam = ExponentialSmoothing(y_input_add[0][0:730], seasonal_periods=365, trend='mul', seasonal='add', damped_trend=True).\
-    fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
-HW_mul_mul_dam = ExponentialSmoothing(y_input_add[0][0:730], seasonal_periods=365, trend='mul', seasonal='mul', damped_trend=True).\
-    fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
-
-# print figures
-plt.figure('730+28+HoltWinters y_input_add global optimization', figsize=(20,10))
-ax_HoltWinters = y_input_add[0].rename('y_input_add[0]').plot(color='k', legend='True')
-ax_HoltWinters.set_ylabel("amount")
-ax_HoltWinters.set_xlabel("day")
-xlim = plt.gca().set_xlim(0, length[0]-1)
-HW_add_add_dam.fittedvalues.plot(ax=ax_HoltWinters, color='red')
-HW_add_mul_dam.fittedvalues.plot(ax=ax_HoltWinters, color='b')
-HW_mul_add_dam.fittedvalues.plot(ax=ax_HoltWinters, color='g')
-HW_mul_mul_dam.fittedvalues.plot(ax=ax_HoltWinters, color='y')
-HW_add_add_dam.forecast(steps_day).rename('HW_add_add_dam').plot(ax=ax_HoltWinters, color='red', legend=True)
-HW_add_mul_dam.forecast(steps_day).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
-HW_mul_add_dam.forecast(steps_day).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
-HW_mul_mul_dam.forecast(steps_day).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
-
-# print parameters
-print()
-print('HoltWinters_730 y_input_add global optimization:')
-results = pd.DataFrame(index=["alpha","beta","phi","gamma","l_0","b_0","SSE"])
-params = ['smoothing_level', 'smoothing_trend', 'damping_trend', 'smoothing_seasonal', 'initial_level', 'initial_trend']
-results["HW_add_add_dam"] = [HW_add_add_dam.params[p] for p in params] + [HW_add_add_dam.sse]
-results["HW_add_mul_dam"] = [HW_add_mul_dam.params[p] for p in params] + [HW_add_mul_dam.sse]
-results["HW_mul_add_dam"] = [HW_mul_add_dam.params[p] for p in params] + [HW_mul_add_dam.sse]
-results["HW_mul_mul_dam"] = [HW_mul_mul_dam.params[p] for p in params] + [HW_mul_mul_dam.sse]
-print(results)
-
-# print internals
-df_HW_add_add_dam = pd.DataFrame(np.c_[y_input_add[0][:730], HW_add_add_dam.level, HW_add_add_dam.trend, HW_add_add_dam.season, HW_add_add_dam.fittedvalues],
-                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_add[0][:730].index)
-print('internal items of HoltWinters_730 HW_add_add_dam are:')
-print(df_HW_add_add_dam)
-HW_add_add_dam_residual = (HW_add_add_dam.forecast(steps_day) - y_input_add[0][730:]) / y_input_add[0][730:] * 100
-print('forecast and actual deviation ratio(%) of HoltWinters_730 HW_add_add_dam is:')
-print(HW_add_add_dam_residual)
-
-df_HW_add_mul_dam = pd.DataFrame(np.c_[y_input_add[0][:730], HW_add_mul_dam.level, HW_add_mul_dam.trend, HW_add_mul_dam.season, HW_add_mul_dam.fittedvalues],
-                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_add[0][:730].index)
-print('internal items of HoltWinters_730 HW_add_mul_dam are:')
-print(df_HW_add_mul_dam)
-HW_add_mul_dam_residual = (HW_add_mul_dam.forecast(steps_day) - y_input_add[0][730:]) / y_input_add[0][730:] * 100
-print('forecast and actual deviation ratio(%) of HoltWinters_730 HW_add_mul_dam is:')
-print(HW_add_mul_dam_residual)
-
-df_HW_mul_add_dam = pd.DataFrame(np.c_[y_input_add[0][:730], HW_mul_add_dam.level, HW_mul_add_dam.trend, HW_mul_add_dam.season, HW_mul_add_dam.fittedvalues],
-                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_add[0][:730].index)
-print('internal items of HoltWinters_730 HW_mul_add_dam are:')
-print(df_HW_mul_add_dam)
-HW_mul_add_dam_residual = (HW_mul_add_dam.forecast(steps_day) - y_input_add[0][730:]) / y_input_add[0][730:] * 100
-print('forecast and actual deviation ratio(%) of HoltWinters_730 HW_mul_add_dam is:')
-print(HW_mul_add_dam_residual)
-
-df_HW_mul_mul_dam = pd.DataFrame(np.c_[y_input_add[0][:730], HW_mul_mul_dam.level, HW_mul_mul_dam.trend, HW_mul_mul_dam.season, HW_mul_mul_dam.fittedvalues],
-                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_add[0][:730].index)
-print('internal items of HoltWinters_730 HW_mul_mul_dam are:')
-print(df_HW_mul_mul_dam)
-HW_mul_mul_dam_residual = (HW_mul_mul_dam.forecast(steps_day) - y_input_add[0][730:]) / y_input_add[0][730:] * 100
-print('forecast and actual deviation ratio(%) of HoltWinters_730 HW_mul_mul_dam is:')
-print(HW_mul_mul_dam_residual)
-
-# print the models to select
-MASE_HW_add_add_dam = sum(abs((HW_add_add_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values) / (y_input_add[0][730-1:730-1+steps_day].values - y_input_add[0][730:730+steps_day].values))
-    * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))
-MASE_HW_add_mul_dam = sum(abs((HW_add_mul_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values) / (y_input_add[0][730-1:730-1+steps_day].values - y_input_add[0][730:730+steps_day].values))
-    * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))
-MASE_HW_mul_add_dam = sum(abs((HW_mul_add_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values) / (y_input_add[0][730-1:730-1+steps_day].values - y_input_add[0][730:730+steps_day].values))
-    * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))
-MASE_HW_mul_mul_dam = sum(abs((HW_mul_mul_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values) / (y_input_add[0][730-1:730-1+steps_day].values - y_input_add[0][730:730+steps_day].values))
-    * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))
-if MASE_HW_add_add_dam < 1:
-    print('HoltWinters_730 y_input_add global optimization，HW_add_add_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_add_add_dam))
-    print(HW_add_add_dam.forecast(steps_day))
-else:
-    print('HoltWinters_730 y_input_add global optimization，HW_add_add_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_add_add_dam))
-if MASE_HW_add_mul_dam < 1:
-    print('HoltWinters_730 y_input_add global optimization，HW_add_mul_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_add_mul_dam))
-    print(HW_add_mul_dam.forecast(steps_day))
-else:
-    print('HoltWinters_730 y_input_add global optimization，HW_add_mul_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_add_mul_dam))
-if MASE_HW_mul_add_dam < 1:
-    print('HoltWinters_730 y_input_add global optimization，HW_mul_add_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_mul_add_dam))
-    print(HW_mul_add_dam.forecast(steps_day))
-else:
-    print('HoltWinters_730 y_input_add global optimization，HW_mul_add_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_mul_add_dam))
-if MASE_HW_mul_mul_dam < 1:
-    print('HoltWinters_730 y_input_add global optimization，HW_mul_mul_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_mul_mul_dam))
-    print(HW_mul_mul_dam.forecast(steps_day))
-else:
-    print('HoltWinters_730 y_input_add global optimization，HW_mul_mul_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_mul_mul_dam))
+# #######################------------global optimization------------#########################
+#
+# # fit models
+# HW_add_add_dam = ExponentialSmoothing(y_input_add[0][0:730], seasonal_periods=365, trend='add', seasonal='add', damped_trend=True).\
+#     fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
+# HW_add_mul_dam = ExponentialSmoothing(y_input_add[0][0:730], seasonal_periods=365, trend='add', seasonal='mul', damped_trend=True).\
+#     fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
+# HW_mul_add_dam = ExponentialSmoothing(y_input_add[0][0:730], seasonal_periods=365, trend='mul', seasonal='add', damped_trend=True).\
+#     fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
+# HW_mul_mul_dam = ExponentialSmoothing(y_input_add[0][0:730], seasonal_periods=365, trend='mul', seasonal='mul', damped_trend=True).\
+#     fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
+#
+# # print figures
+# plt.figure('730+28+HoltWinters y_input_add global optimization', figsize=(20,10))
+# ax_HoltWinters = y_input_add[0].rename('y_input_add[0]').plot(color='k', legend='True')
+# ax_HoltWinters.set_ylabel("amount")
+# ax_HoltWinters.set_xlabel("day")
+# xlim = plt.gca().set_xlim(0, length[0]-1)
+# HW_add_add_dam.fittedvalues.plot(ax=ax_HoltWinters, color='red')
+# HW_add_mul_dam.fittedvalues.plot(ax=ax_HoltWinters, color='b')
+# HW_mul_add_dam.fittedvalues.plot(ax=ax_HoltWinters, color='g')
+# HW_mul_mul_dam.fittedvalues.plot(ax=ax_HoltWinters, color='y')
+# HW_add_add_dam.forecast(steps_day).rename('HW_add_add_dam').plot(ax=ax_HoltWinters, color='red', legend=True)
+# HW_add_mul_dam.forecast(steps_day).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
+# HW_mul_add_dam.forecast(steps_day).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
+# HW_mul_mul_dam.forecast(steps_day).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
+#
+# # print parameters
+# print()
+# print('HoltWinters_730 y_input_add global optimization:')
+# results = pd.DataFrame(index=["alpha","beta","phi","gamma","l_0","b_0","SSE"])
+# params = ['smoothing_level', 'smoothing_trend', 'damping_trend', 'smoothing_seasonal', 'initial_level', 'initial_trend']
+# results["HW_add_add_dam"] = [HW_add_add_dam.params[p] for p in params] + [HW_add_add_dam.sse]
+# results["HW_add_mul_dam"] = [HW_add_mul_dam.params[p] for p in params] + [HW_add_mul_dam.sse]
+# results["HW_mul_add_dam"] = [HW_mul_add_dam.params[p] for p in params] + [HW_mul_add_dam.sse]
+# results["HW_mul_mul_dam"] = [HW_mul_mul_dam.params[p] for p in params] + [HW_mul_mul_dam.sse]
+# print(results)
+#
+# # print internals
+# df_HW_add_add_dam = pd.DataFrame(np.c_[y_input_add[0][:730], HW_add_add_dam.level, HW_add_add_dam.trend, HW_add_add_dam.season, HW_add_add_dam.fittedvalues],
+#                                 columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_add[0][:730].index)
+# print('internal items of HoltWinters_730 HW_add_add_dam are:')
+# print(df_HW_add_add_dam)
+# HW_add_add_dam_residual = (HW_add_add_dam.forecast(steps_day) - y_input_add[0][730:]) / y_input_add[0][730:] * 100
+# print('forecast and actual deviation ratio(%) of HoltWinters_730 HW_add_add_dam is:')
+# print(HW_add_add_dam_residual)
+#
+# df_HW_add_mul_dam = pd.DataFrame(np.c_[y_input_add[0][:730], HW_add_mul_dam.level, HW_add_mul_dam.trend, HW_add_mul_dam.season, HW_add_mul_dam.fittedvalues],
+#                                 columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_add[0][:730].index)
+# print('internal items of HoltWinters_730 HW_add_mul_dam are:')
+# print(df_HW_add_mul_dam)
+# HW_add_mul_dam_residual = (HW_add_mul_dam.forecast(steps_day) - y_input_add[0][730:]) / y_input_add[0][730:] * 100
+# print('forecast and actual deviation ratio(%) of HoltWinters_730 HW_add_mul_dam is:')
+# print(HW_add_mul_dam_residual)
+#
+# df_HW_mul_add_dam = pd.DataFrame(np.c_[y_input_add[0][:730], HW_mul_add_dam.level, HW_mul_add_dam.trend, HW_mul_add_dam.season, HW_mul_add_dam.fittedvalues],
+#                                 columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_add[0][:730].index)
+# print('internal items of HoltWinters_730 HW_mul_add_dam are:')
+# print(df_HW_mul_add_dam)
+# HW_mul_add_dam_residual = (HW_mul_add_dam.forecast(steps_day) - y_input_add[0][730:]) / y_input_add[0][730:] * 100
+# print('forecast and actual deviation ratio(%) of HoltWinters_730 HW_mul_add_dam is:')
+# print(HW_mul_add_dam_residual)
+#
+# df_HW_mul_mul_dam = pd.DataFrame(np.c_[y_input_add[0][:730], HW_mul_mul_dam.level, HW_mul_mul_dam.trend, HW_mul_mul_dam.season, HW_mul_mul_dam.fittedvalues],
+#                                 columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_add[0][:730].index)
+# print('internal items of HoltWinters_730 HW_mul_mul_dam are:')
+# print(df_HW_mul_mul_dam)
+# HW_mul_mul_dam_residual = (HW_mul_mul_dam.forecast(steps_day) - y_input_add[0][730:]) / y_input_add[0][730:] * 100
+# print('forecast and actual deviation ratio(%) of HoltWinters_730 HW_mul_mul_dam is:')
+# print(HW_mul_mul_dam_residual)
+#
+# # print the models to select
+# MASE_HW_add_add_dam = sum(abs((HW_add_add_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values) / (y_input_add[0][730-1:730-1+steps_day].values - y_input_add[0][730:730+steps_day].values))
+#     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))
+# MASE_HW_add_mul_dam = sum(abs((HW_add_mul_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values) / (y_input_add[0][730-1:730-1+steps_day].values - y_input_add[0][730:730+steps_day].values))
+#     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))
+# MASE_HW_mul_add_dam = sum(abs((HW_mul_add_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values) / (y_input_add[0][730-1:730-1+steps_day].values - y_input_add[0][730:730+steps_day].values))
+#     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))
+# MASE_HW_mul_mul_dam = sum(abs((HW_mul_mul_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values) / (y_input_add[0][730-1:730-1+steps_day].values - y_input_add[0][730:730+steps_day].values))
+#     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))
+# if MASE_HW_add_add_dam < 1:
+#     print('HoltWinters_730 y_input_add global optimization，HW_add_add_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_add_add_dam))
+#     print(HW_add_add_dam.forecast(steps_day))
+# else:
+#     print('HoltWinters_730 y_input_add global optimization，HW_add_add_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_add_add_dam))
+# if MASE_HW_add_mul_dam < 1:
+#     print('HoltWinters_730 y_input_add global optimization，HW_add_mul_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_add_mul_dam))
+#     print(HW_add_mul_dam.forecast(steps_day))
+# else:
+#     print('HoltWinters_730 y_input_add global optimization，HW_add_mul_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_add_mul_dam))
+# if MASE_HW_mul_add_dam < 1:
+#     print('HoltWinters_730 y_input_add global optimization，HW_mul_add_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_mul_add_dam))
+#     print(HW_mul_add_dam.forecast(steps_day))
+# else:
+#     print('HoltWinters_730 y_input_add global optimization，HW_mul_add_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_mul_add_dam))
+# if MASE_HW_mul_mul_dam < 1:
+#     print('HoltWinters_730 y_input_add global optimization，HW_mul_mul_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_mul_mul_dam))
+#     print(HW_mul_mul_dam.forecast(steps_day))
+# else:
+#     print('HoltWinters_730 y_input_add global optimization，HW_mul_mul_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_mul_mul_dam))
 
 #######################################################################
 
-HW_add_add_dam = ExponentialSmoothing(y_input_add[1][0:365+1], seasonal_periods=365, trend='add', seasonal='add', damped_trend=True).\
+HW_add_add_dam = ExponentialSmoothing(y_input_add[1][0:365+1], seasonal_periods=365, trend='add', seasonal='add', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
-HW_add_mul_dam = ExponentialSmoothing(y_input_add[1][0:365+1], seasonal_periods=365, trend='add', seasonal='mul', damped_trend=True).\
+HW_add_mul_dam = ExponentialSmoothing(y_input_add[1][0:365+1], seasonal_periods=365, trend='add', seasonal='mul', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
-HW_mul_add_dam = ExponentialSmoothing(y_input_add[1][0:365+1], seasonal_periods=365, trend='mul', seasonal='add', damped_trend=True).\
+HW_mul_add_dam = ExponentialSmoothing(y_input_add[1][0:365+1], seasonal_periods=365, trend='mul', seasonal='add', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
-HW_mul_mul_dam = ExponentialSmoothing(y_input_add[1][0:365+1], seasonal_periods=365, trend='mul', seasonal='mul', damped_trend=True).\
+HW_mul_mul_dam = ExponentialSmoothing(y_input_add[1][0:365+1], seasonal_periods=365, trend='mul', seasonal='mul', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
 
 plt.figure('366+27+HoltWinters y_input_add', figsize=(20,10))
@@ -1111,7 +1086,6 @@ HW_add_add_dam.forecast(steps_day-1).rename('HW_add_add_dam').plot(ax=ax_HoltWin
 HW_add_mul_dam.forecast(steps_day-1).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
 HW_mul_add_dam.forecast(steps_day-1).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_day-1).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 print()
 print('HoltWinters_366 y_input_add:')
@@ -1208,7 +1182,6 @@ HW_add_add_dam.forecast(steps_week).rename('HW_add_add_dam').plot(ax=ax_HoltWint
 HW_add_mul_dam.forecast(steps_week).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
 HW_mul_add_dam.forecast(steps_week).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_week).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 print()
 print('HoltWinters_104 y_input_add:')
@@ -1283,13 +1256,13 @@ else:
 
 ##############################
 
-HW_add_add_dam = ExponentialSmoothing(y_input_add[3][0:52+1], seasonal_periods=52, trend='add', seasonal='add', damped_trend=True).\
+HW_add_add_dam = ExponentialSmoothing(y_input_add[3][0:52+1], seasonal_periods=52, trend='add', seasonal='add', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
-HW_add_mul_dam = ExponentialSmoothing(y_input_add[3][0:52+1], seasonal_periods=52, trend='add', seasonal='mul', damped_trend=True).\
+HW_add_mul_dam = ExponentialSmoothing(y_input_add[3][0:52+1], seasonal_periods=52, trend='add', seasonal='mul', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
-HW_mul_add_dam = ExponentialSmoothing(y_input_add[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='add', damped_trend=True).\
+HW_mul_add_dam = ExponentialSmoothing(y_input_add[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='add', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
-HW_mul_mul_dam = ExponentialSmoothing(y_input_add[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='mul', damped_trend=True).\
+HW_mul_mul_dam = ExponentialSmoothing(y_input_add[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='mul', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
 
 plt.figure('53+3+HoltWinters y_input_add', figsize=(20,10))
@@ -1305,7 +1278,6 @@ HW_add_add_dam.forecast(steps_week-1).rename('HW_add_add_dam').plot(ax=ax_HoltWi
 HW_add_mul_dam.forecast(steps_week-1).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
 HW_mul_add_dam.forecast(steps_week-1).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_week-1).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 print()
 print('HoltWinters_53 y_input_add:')
@@ -1402,7 +1374,6 @@ HW_add_add_dam.forecast(steps_day).rename('HW_add_add_dam').plot(ax=ax_HoltWinte
 HW_add_mul_dam.forecast(steps_day).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
 HW_mul_add_dam.forecast(steps_day).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_day).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 print()
 print('HoltWinters_730 y_input_mul:')
@@ -1477,13 +1448,13 @@ else:
 
 ##############################
 
-HW_add_add_dam = ExponentialSmoothing(y_input_mul[1][0:365+1], seasonal_periods=365, trend='add', seasonal='add', damped_trend=True).\
+HW_add_add_dam = ExponentialSmoothing(y_input_mul[1][0:365+1], seasonal_periods=365, trend='add', seasonal='add', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
-HW_add_mul_dam = ExponentialSmoothing(y_input_mul[1][0:365+1], seasonal_periods=365, trend='add', seasonal='mul', damped_trend=True).\
+HW_add_mul_dam = ExponentialSmoothing(y_input_mul[1][0:365+1], seasonal_periods=365, trend='add', seasonal='mul', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
-HW_mul_add_dam = ExponentialSmoothing(y_input_mul[1][0:365+1], seasonal_periods=365, trend='mul', seasonal='add', damped_trend=True).\
+HW_mul_add_dam = ExponentialSmoothing(y_input_mul[1][0:365+1], seasonal_periods=365, trend='mul', seasonal='add', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
-HW_mul_mul_dam = ExponentialSmoothing(y_input_mul[1][0:365+1], seasonal_periods=365, trend='mul', seasonal='mul', damped_trend=True).\
+HW_mul_mul_dam = ExponentialSmoothing(y_input_mul[1][0:365+1], seasonal_periods=365, trend='mul', seasonal='mul', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
 
 plt.figure('366+27+HoltWinters y_input_mul', figsize=(20,10))
@@ -1499,7 +1470,6 @@ HW_add_add_dam.forecast(steps_day-1).rename('HW_add_add_dam').plot(ax=ax_HoltWin
 HW_add_mul_dam.forecast(steps_day-1).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
 HW_mul_add_dam.forecast(steps_day-1).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_day-1).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 print()
 print('HoltWinters_366 y_input_mul:')
@@ -1596,7 +1566,6 @@ HW_add_add_dam.forecast(steps_week).rename('HW_add_add_dam').plot(ax=ax_HoltWint
 HW_add_mul_dam.forecast(steps_week).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
 HW_mul_add_dam.forecast(steps_week).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_week).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 print()
 print('HoltWinters_104 y_input_mul:')
@@ -1672,13 +1641,13 @@ else:
 ##############################
 
 # fit models
-HW_add_add_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='add', seasonal='add', damped_trend=False).\
+HW_add_add_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='add', seasonal='add', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
-HW_add_mul_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='add', seasonal='mul', damped_trend=True).\
+HW_add_mul_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='add', seasonal='mul', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
-HW_mul_add_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='add', damped_trend=True).\
+HW_mul_add_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='add', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
-HW_mul_mul_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='mul', damped_trend=True).\
+HW_mul_mul_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='mul', damped_trend=True, initialization_method="legacy-heuristic").\
     fit(damping_trend=0.99, use_boxcox=None, method='L-BFGS-B', use_brute=True)
 
 # plot time series
@@ -1695,7 +1664,6 @@ HW_add_add_dam.forecast(steps_week-1).rename('HW_add_add_dam').plot(ax=ax_HoltWi
 HW_add_mul_dam.forecast(steps_week-1).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
 HW_mul_add_dam.forecast(steps_week-1).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_week-1).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 # print model parameters
 print()
@@ -1771,107 +1739,106 @@ if MASE_HW_mul_mul_dam < 1:
 else:
     print('HoltWinters_53 y_input_mul，HW_mul_mul_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_mul_mul_dam))
 
-#######################------------global optimization------------#########################
-
-# fit models
-HW_add_add_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='add', seasonal='add', damped_trend=True).\
-    fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
-HW_add_mul_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='add', seasonal='mul', damped_trend=True).\
-    fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
-HW_mul_add_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='add', damped_trend=True).\
-    fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
-HW_mul_mul_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='mul', damped_trend=True).\
-    fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
-
-# plot time series
-plt.figure('53+3+HoltWinters y_input_mul global optimization', figsize=(20,10))
-ax_HoltWinters = y_input_mul[3].rename('y_input_mul[3]').plot(color='k', legend='True')
-ax_HoltWinters.set_ylabel("amount")
-ax_HoltWinters.set_xlabel("day")
-xlim = plt.gca().set_xlim(0, length[3]-1)
-HW_add_add_dam.fittedvalues.plot(ax=ax_HoltWinters, color='red')
-HW_add_mul_dam.fittedvalues.plot(ax=ax_HoltWinters, color='b')
-HW_mul_add_dam.fittedvalues.plot(ax=ax_HoltWinters, color='g')
-HW_mul_mul_dam.fittedvalues.plot(ax=ax_HoltWinters, color='y')
-HW_add_add_dam.forecast(steps_week-1).rename('HW_add_add_dam').plot(ax=ax_HoltWinters, color='red', legend=True)
-HW_add_mul_dam.forecast(steps_week-1).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
-HW_mul_add_dam.forecast(steps_week-1).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
-HW_mul_mul_dam.forecast(steps_week-1).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
-
-# print model parameters
-print()
-print('HoltWinters_53 y_input_mul global optimization:')
-results = pd.DataFrame(index=['alpha','beta','phi','gamma','l_0','b_0','SSE'])
-params = ['smoothing_level', 'smoothing_trend', 'damping_trend', 'smoothing_seasonal', 'initial_level', 'initial_trend']
-results["HW_add_add_dam"] = [HW_add_add_dam.params[p] for p in params] + [HW_add_add_dam.sse]
-results["HW_add_mul_dam"] = [HW_add_mul_dam.params[p] for p in params] + [HW_add_mul_dam.sse]
-results["HW_mul_add_dam"] = [HW_mul_add_dam.params[p] for p in params] + [HW_mul_add_dam.sse]
-results["HW_mul_mul_dam"] = [HW_mul_mul_dam.params[p] for p in params] + [HW_mul_mul_dam.sse]
-print(results)
-
-# print model internals
-df_HW_add_add_dam = pd.DataFrame(np.c_[y_input_mul[3][:52+1], HW_add_add_dam.level, HW_add_add_dam.trend, HW_add_add_dam.season, HW_add_add_dam.fittedvalues],
-                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_mul[3][:52+1].index)
-print('internal items of HoltWinters_53 HW_add_add_dam are:')
-print(df_HW_add_add_dam)
-HW_add_add_dam_residual = (HW_add_add_dam.forecast(steps_week-1) - y_input_mul[3][52+1:]) / y_input_mul[3][52+1:] * 100
-print('forecast and actual deviation ratio(%) of HoltWinters_53 HW_add_add_dam is:')
-print(HW_add_add_dam_residual)
-
-df_HW_add_mul_dam = pd.DataFrame(np.c_[y_input_mul[3][:52+1], HW_add_mul_dam.level, HW_add_mul_dam.trend, HW_add_mul_dam.season, HW_add_mul_dam.fittedvalues],
-                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_mul[3][:52+1].index)
-print('internal items of HoltWinters_53 HW_add_mul_dam are:')
-print(df_HW_add_mul_dam)
-HW_add_mul_dam_residual = (HW_add_mul_dam.forecast(steps_week-1) - y_input_mul[3][52+1:]) / y_input_mul[3][52+1:] * 100
-print('forecast and actual deviation ratio(%) of HoltWinters_53 HW_add_mul_dam is:')
-print(HW_add_mul_dam_residual)
-
-df_HW_mul_add_dam = pd.DataFrame(np.c_[y_input_mul[3][:52+1], HW_mul_add_dam.level, HW_mul_add_dam.trend, HW_mul_add_dam.season, HW_mul_add_dam.fittedvalues],
-                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_mul[3][:52+1].index)
-print('internal items of HoltWinters_53 HW_mul_add_dam are:')
-print(df_HW_mul_add_dam)
-HW_mul_add_dam_residual = (HW_mul_add_dam.forecast(steps_week-1) - y_input_mul[3][52+1:]) / y_input_mul[3][52+1:] * 100
-print('forecast and actual deviation ratio(%) of HoltWinters_53 HW_mul_add_dam is:')
-print(HW_mul_add_dam_residual)
-
-df_HW_mul_mul_dam = pd.DataFrame(np.c_[y_input_mul[3][:52+1], HW_mul_mul_dam.level, HW_mul_mul_dam.trend, HW_mul_mul_dam.season, HW_mul_mul_dam.fittedvalues],
-                                columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_mul[3][:52+1].index)
-print('internal items of HoltWinters_53 HW_mul_mul_dam are:')
-print(df_HW_mul_mul_dam)
-HW_mul_mul_dam_residual = (HW_mul_mul_dam.forecast(steps_week-1) - y_input_mul[3][52+1:]) / y_input_mul[3][52+1:] * 100
-print('forecast and actual deviation ratio(%) of HoltWinters_53 HW_mul_mul_dam is:')
-print(HW_mul_mul_dam_residual)
-
-# select models through benchmark
-MASE_HW_add_add_dam = sum(abs((HW_add_add_dam.forecast(steps_week-1).values - y_input_mul[3][52+1:52+1+steps_week-1].values) / (y_input_mul[3][52:52+steps_week-1].values - y_input_mul[3][52+1:52+1+steps_week-1].values))
-    * (np.array(range(steps_week-1, 0, -1)) / sum(np.array(range(1, steps_week-1+1)))))
-MASE_HW_add_mul_dam = sum(abs((HW_add_mul_dam.forecast(steps_week-1).values - y_input_mul[3][52+1:52+1+steps_week-1].values) / (y_input_mul[3][52:52+steps_week-1].values - y_input_mul[3][52+1:52+1+steps_week-1].values))
-    * (np.array(range(steps_week-1, 0, -1)) / sum(np.array(range(1, steps_week-1+1)))))
-MASE_HW_mul_add_dam = sum(abs((HW_mul_add_dam.forecast(steps_week-1).values - y_input_mul[3][52+1:52+1+steps_week-1].values) / (y_input_mul[3][52:52+steps_week-1].values - y_input_mul[3][52+1:52+1+steps_week-1].values))
-    * (np.array(range(steps_week-1, 0, -1)) / sum(np.array(range(1, steps_week-1+1)))))
-MASE_HW_mul_mul_dam = sum(abs((HW_mul_mul_dam.forecast(steps_week-1).values - y_input_mul[3][52+1:52+1+steps_week-1].values) / (y_input_mul[3][52:52+steps_week-1].values - y_input_mul[3][52+1:52+1+steps_week-1].values))
-    * (np.array(range(steps_week-1, 0, -1)) / sum(np.array(range(1, steps_week-1+1)))))
-if MASE_HW_add_add_dam < 1:
-    print('HoltWinters_53 y_input_mul，HW_add_add_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_add_add_dam))
-    print(HW_add_add_dam.forecast(steps_week-1))
-else:
-    print('HoltWinters_53 y_input_mul，HW_add_add_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_add_add_dam))
-if MASE_HW_add_mul_dam < 1:
-    print('HoltWinters_53 y_input_mul，HW_add_mul_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_add_mul_dam))
-    print(HW_add_mul_dam.forecast(steps_week-1))
-else:
-    print('HoltWinters_53 y_input_mul，HW_add_mul_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_add_mul_dam))
-if MASE_HW_mul_add_dam < 1:
-    print('HoltWinters_53 y_input_mul，HW_mul_add_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_mul_add_dam))
-    print(HW_mul_add_dam.forecast(steps_week-1))
-else:
-    print('HoltWinters_53 y_input_mul，HW_mul_add_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_mul_add_dam))
-if MASE_HW_mul_mul_dam < 1:
-    print('HoltWinters_53 y_input_mul，HW_mul_mul_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_mul_mul_dam))
-    print(HW_mul_mul_dam.forecast(steps_week-1))
-else:
-    print('HoltWinters_53 y_input_mul，HW_mul_mul_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_mul_mul_dam))
+# #######################------------global optimization------------#########################
+#
+# # fit models
+# HW_add_add_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='add', seasonal='add', damped_trend=True).\
+#     fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
+# HW_add_mul_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='add', seasonal='mul', damped_trend=True).\
+#     fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
+# HW_mul_add_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='add', damped_trend=True).\
+#     fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
+# HW_mul_mul_dam = ExponentialSmoothing(y_input_mul[3][0:52+1], seasonal_periods=52, trend='mul', seasonal='mul', damped_trend=True).\
+#     fit(damping_trend=0.99, use_boxcox=None, method='basinhopping', use_brute=False)
+#
+# # plot time series
+# plt.figure('53+3+HoltWinters y_input_mul global optimization', figsize=(20,10))
+# ax_HoltWinters = y_input_mul[3].rename('y_input_mul[3]').plot(color='k', legend='True')
+# ax_HoltWinters.set_ylabel("amount")
+# ax_HoltWinters.set_xlabel("day")
+# xlim = plt.gca().set_xlim(0, length[3]-1)
+# HW_add_add_dam.fittedvalues.plot(ax=ax_HoltWinters, color='red')
+# HW_add_mul_dam.fittedvalues.plot(ax=ax_HoltWinters, color='b')
+# HW_mul_add_dam.fittedvalues.plot(ax=ax_HoltWinters, color='g')
+# HW_mul_mul_dam.fittedvalues.plot(ax=ax_HoltWinters, color='y')
+# HW_add_add_dam.forecast(steps_week-1).rename('HW_add_add_dam').plot(ax=ax_HoltWinters, color='red', legend=True)
+# HW_add_mul_dam.forecast(steps_week-1).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
+# HW_mul_add_dam.forecast(steps_week-1).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
+# HW_mul_mul_dam.forecast(steps_week-1).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
+#
+# # print model parameters
+# print()
+# print('HoltWinters_53 y_input_mul global optimization:')
+# results = pd.DataFrame(index=['alpha','beta','phi','gamma','l_0','b_0','SSE'])
+# params = ['smoothing_level', 'smoothing_trend', 'damping_trend', 'smoothing_seasonal', 'initial_level', 'initial_trend']
+# results["HW_add_add_dam"] = [HW_add_add_dam.params[p] for p in params] + [HW_add_add_dam.sse]
+# results["HW_add_mul_dam"] = [HW_add_mul_dam.params[p] for p in params] + [HW_add_mul_dam.sse]
+# results["HW_mul_add_dam"] = [HW_mul_add_dam.params[p] for p in params] + [HW_mul_add_dam.sse]
+# results["HW_mul_mul_dam"] = [HW_mul_mul_dam.params[p] for p in params] + [HW_mul_mul_dam.sse]
+# print(results)
+#
+# # print model internals
+# df_HW_add_add_dam = pd.DataFrame(np.c_[y_input_mul[3][:52+1], HW_add_add_dam.level, HW_add_add_dam.trend, HW_add_add_dam.season, HW_add_add_dam.fittedvalues],
+#                                 columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_mul[3][:52+1].index)
+# print('internal items of HoltWinters_53 HW_add_add_dam are:')
+# print(df_HW_add_add_dam)
+# HW_add_add_dam_residual = (HW_add_add_dam.forecast(steps_week-1) - y_input_mul[3][52+1:]) / y_input_mul[3][52+1:] * 100
+# print('forecast and actual deviation ratio(%) of HoltWinters_53 HW_add_add_dam is:')
+# print(HW_add_add_dam_residual)
+#
+# df_HW_add_mul_dam = pd.DataFrame(np.c_[y_input_mul[3][:52+1], HW_add_mul_dam.level, HW_add_mul_dam.trend, HW_add_mul_dam.season, HW_add_mul_dam.fittedvalues],
+#                                 columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_mul[3][:52+1].index)
+# print('internal items of HoltWinters_53 HW_add_mul_dam are:')
+# print(df_HW_add_mul_dam)
+# HW_add_mul_dam_residual = (HW_add_mul_dam.forecast(steps_week-1) - y_input_mul[3][52+1:]) / y_input_mul[3][52+1:] * 100
+# print('forecast and actual deviation ratio(%) of HoltWinters_53 HW_add_mul_dam is:')
+# print(HW_add_mul_dam_residual)
+#
+# df_HW_mul_add_dam = pd.DataFrame(np.c_[y_input_mul[3][:52+1], HW_mul_add_dam.level, HW_mul_add_dam.trend, HW_mul_add_dam.season, HW_mul_add_dam.fittedvalues],
+#                                 columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_mul[3][:52+1].index)
+# print('internal items of HoltWinters_53 HW_mul_add_dam are:')
+# print(df_HW_mul_add_dam)
+# HW_mul_add_dam_residual = (HW_mul_add_dam.forecast(steps_week-1) - y_input_mul[3][52+1:]) / y_input_mul[3][52+1:] * 100
+# print('forecast and actual deviation ratio(%) of HoltWinters_53 HW_mul_add_dam is:')
+# print(HW_mul_add_dam_residual)
+#
+# df_HW_mul_mul_dam = pd.DataFrame(np.c_[y_input_mul[3][:52+1], HW_mul_mul_dam.level, HW_mul_mul_dam.trend, HW_mul_mul_dam.season, HW_mul_mul_dam.fittedvalues],
+#                                 columns=['y_t','l_t','b_t','s_t','yhat_t'], index=y_input_mul[3][:52+1].index)
+# print('internal items of HoltWinters_53 HW_mul_mul_dam are:')
+# print(df_HW_mul_mul_dam)
+# HW_mul_mul_dam_residual = (HW_mul_mul_dam.forecast(steps_week-1) - y_input_mul[3][52+1:]) / y_input_mul[3][52+1:] * 100
+# print('forecast and actual deviation ratio(%) of HoltWinters_53 HW_mul_mul_dam is:')
+# print(HW_mul_mul_dam_residual)
+#
+# # select models through benchmark
+# MASE_HW_add_add_dam = sum(abs((HW_add_add_dam.forecast(steps_week-1).values - y_input_mul[3][52+1:52+1+steps_week-1].values) / (y_input_mul[3][52:52+steps_week-1].values - y_input_mul[3][52+1:52+1+steps_week-1].values))
+#     * (np.array(range(steps_week-1, 0, -1)) / sum(np.array(range(1, steps_week-1+1)))))
+# MASE_HW_add_mul_dam = sum(abs((HW_add_mul_dam.forecast(steps_week-1).values - y_input_mul[3][52+1:52+1+steps_week-1].values) / (y_input_mul[3][52:52+steps_week-1].values - y_input_mul[3][52+1:52+1+steps_week-1].values))
+#     * (np.array(range(steps_week-1, 0, -1)) / sum(np.array(range(1, steps_week-1+1)))))
+# MASE_HW_mul_add_dam = sum(abs((HW_mul_add_dam.forecast(steps_week-1).values - y_input_mul[3][52+1:52+1+steps_week-1].values) / (y_input_mul[3][52:52+steps_week-1].values - y_input_mul[3][52+1:52+1+steps_week-1].values))
+#     * (np.array(range(steps_week-1, 0, -1)) / sum(np.array(range(1, steps_week-1+1)))))
+# MASE_HW_mul_mul_dam = sum(abs((HW_mul_mul_dam.forecast(steps_week-1).values - y_input_mul[3][52+1:52+1+steps_week-1].values) / (y_input_mul[3][52:52+steps_week-1].values - y_input_mul[3][52+1:52+1+steps_week-1].values))
+#     * (np.array(range(steps_week-1, 0, -1)) / sum(np.array(range(1, steps_week-1+1)))))
+# if MASE_HW_add_add_dam < 1:
+#     print('HoltWinters_53 y_input_mul，HW_add_add_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_add_add_dam))
+#     print(HW_add_add_dam.forecast(steps_week-1))
+# else:
+#     print('HoltWinters_53 y_input_mul，HW_add_add_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_add_add_dam))
+# if MASE_HW_add_mul_dam < 1:
+#     print('HoltWinters_53 y_input_mul，HW_add_mul_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_add_mul_dam))
+#     print(HW_add_mul_dam.forecast(steps_week-1))
+# else:
+#     print('HoltWinters_53 y_input_mul，HW_add_mul_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_add_mul_dam))
+# if MASE_HW_mul_add_dam < 1:
+#     print('HoltWinters_53 y_input_mul，HW_mul_add_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_mul_add_dam))
+#     print(HW_mul_add_dam.forecast(steps_week-1))
+# else:
+#     print('HoltWinters_53 y_input_mul，HW_mul_add_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_mul_add_dam))
+# if MASE_HW_mul_mul_dam < 1:
+#     print('HoltWinters_53 y_input_mul，HW_mul_mul_dam可用，其MASE值为：{:.2f}，其预测值为：'.format(MASE_HW_mul_mul_dam))
+#     print(HW_mul_mul_dam.forecast(steps_week-1))
+# else:
+#     print('HoltWinters_53 y_input_mul，HW_mul_mul_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_mul_mul_dam))
 
 ######################-------------HoltWinters------------#########################
 
@@ -1898,7 +1865,6 @@ ax_SES.set_xlabel("day")
 xlim = plt.gca().set_xlim(0, length[0]-1)
 fit_SES_train.fittedvalues.plot(ax=ax_SES, color='r')
 fit_SES_train.forecast(steps_day).rename(r'$\alpha=%s$'%fit_SES_train.model.params['smoothing_level']).plot(ax=ax_SES, color='r', legend=True)
-plt.show()
 
 # print forecast deviation ratio
 fit_SES_train_residual = (fit_SES_train.forecast(steps_day) - y_input_add[0][730:]) / y_input_add[0][730:] * 100
@@ -1947,7 +1913,6 @@ Holt_add_train.forecast(steps_day).rename('Holt_add_train').plot(ax=ax_Holt, col
 Holt_add_dam_train.forecast(steps_day).rename('Holt_add_dam_train').plot(ax=ax_Holt, color='red', legend=True)
 Holt_mul_train.forecast(steps_day).rename('Holt_mul_train').plot(ax=ax_Holt, color='g', legend=True)
 Holt_mul_dam_train.forecast(steps_day).rename('Holt_mul_dam_train').plot(ax=ax_Holt, color='y', legend=True)
-plt.show()
 
 # print deviation ratio
 Holt_add_train_residual = (Holt_add_train.forecast(steps_day) - y_input_add[0][730:]) / y_input_add[0][730:] * 100
@@ -2019,7 +1984,6 @@ HW_add_add.forecast(steps_day).rename('HW_add_add').plot(ax=ax_HoltWinters, colo
 HW_add_mul.forecast(steps_day).rename('HW_add_mul').plot(ax=ax_HoltWinters, color='b', legend=True)
 HW_mul_add.forecast(steps_day).rename('HW_mul_add').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul.forecast(steps_day).rename('HW_mul_mul').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 # print parameters
 print()
@@ -2121,7 +2085,6 @@ HW_add_add_dam.forecast(steps_day).rename('HW_add_add_dam').plot(ax=ax_HoltWinte
 HW_add_mul_dam.forecast(steps_day).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='b', legend=True)
 HW_mul_add_dam.forecast(steps_day).rename('HW_mul_add_dam').plot(ax=ax_HoltWinters, color='g', legend=True)
 HW_mul_mul_dam.forecast(steps_day).rename('HW_mul_mul_dam').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 # print parameters
 print()
@@ -2204,7 +2167,7 @@ print('生产系统、自定义、statsmodels中平滑类模型对比：')
 print('\n','生产系统、自定义、statsmodels中simple exponential smoothing对比：')
 # fit models
 fit_SES_train = SimpleExpSmoothing(y_input_add[0][0:730]).fit(optimized=True, use_brute=False)
-SES_SM = test_smoothing_models.simple(list(y_input_add[0][0:730]), steps_day)
+SES_SM = smoothing_models.simple(list(y_input_add[0][0:730]), steps_day)
 SES_WU = wualgorithm.simple(list(y_input_add[0][0:730]), steps_day)
 
 # print figures
@@ -2216,7 +2179,6 @@ xlim = plt.gca().set_xlim(0, length[0]-1)
 pd.concat([fit_SES_train.fittedvalues, fit_SES_train.forecast(steps_day)], ignore_index=True).rename('fit_SES_train').plot(ax=ax_HoltWinters, color='r', legend=True)
 pd.concat([pd.Series(SES_SM['fittedvalues']), pd.Series(SES_SM['predict'])], ignore_index=True).rename('SES_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
 pd.concat([pd.Series(SES_WU['fittedvalues']), pd.Series(SES_WU['pred'])], ignore_index=True).rename('SES_WU').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 # print statistics data
 print('在训练集上，自定义简单平滑模型的RMSE与SES的RMSE之比为：{:.2f}%'.format(SES_SM['rmse'] / np.sqrt(fit_SES_train.sse/730) * 100))
@@ -2231,7 +2193,7 @@ print('在验证集上，生产系统简单平滑模型与SES的加权MASE值为
 print('\n','生产系统、自定义、statsmodels中Holt additive对比：')
 # fit models
 Holt_add_dam_train = Holt(y_input_add[0][0:730], exponential=False, damped_trend=True).fit(damping_trend=0.99, optimized=True, use_brute=False)
-Holt_add_SM = test_smoothing_models.linear(list(y_input_add[0][0:730]), steps_day)
+Holt_add_SM = smoothing_models.linear(list(y_input_add[0][0:730]), steps_day)
 Holt_add_WU = wualgorithm.linear(list(y_input_add[0][0:730]), steps_day)
 
 # print figures
@@ -2243,7 +2205,6 @@ xlim = plt.gca().set_xlim(0, length[0]-1)
 pd.concat([Holt_add_dam_train.fittedvalues, Holt_add_dam_train.forecast(steps_day)], ignore_index=True).rename('Holt_add_dam_train').plot(ax=ax_HoltWinters, color='red', legend=True)
 pd.concat([pd.Series(Holt_add_SM['fittedvalues']), pd.Series(Holt_add_SM['predict'])], ignore_index=True).rename('Holt_add_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
 pd.concat([pd.Series(Holt_add_WU['fittedvalues']), pd.Series(Holt_add_WU['pred'])], ignore_index=True).rename('Holt_add_WU').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 # print statistics data
 print('在训练集上，自定义霍尔特加法模型的RMSE与Holt_add_dam的RMSE之比为：{:.2f}%'.format(Holt_add_SM['rmse'] / np.sqrt(Holt_add_dam_train.sse/730) * 100))
@@ -2258,7 +2219,7 @@ print('在验证集上，生产系统霍尔特加法模型与Holt_add_dam的加�
 print('\n','生产系统、自定义、statsmodels中Holt multiplicative对比：')
 # fit models
 Holt_mul_dam_train = Holt(y_input_add[0][0:730], exponential=True, damped_trend=True).fit(damping_trend=0.99, optimized=True, use_brute=False)
-Holt_mul_SM = test_smoothing_models.double_mul(list(y_input_add[0][0:730]), steps_day)
+Holt_mul_SM = smoothing_models.double_mul(list(y_input_add[0][0:730]), steps_day)
 
 # print figures
 plt.figure('730+28+compared Holt_mul y_input_add', figsize=(20,10))
@@ -2268,7 +2229,6 @@ ax_HoltWinters.set_xlabel("day")
 xlim = plt.gca().set_xlim(0, length[0]-1)
 pd.concat([Holt_mul_dam_train.fittedvalues, Holt_mul_dam_train.forecast(steps_day)], ignore_index=True).rename('Holt_mul_dam_train').plot(ax=ax_HoltWinters, color='red', legend=True)
 pd.concat([pd.Series(Holt_mul_SM['fittedvalues']), pd.Series(Holt_mul_SM['predict'])], ignore_index=True).rename('Holt_mul_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
-plt.show()
 
 # print statistics data
 print('在训练集上，自定义霍尔特乘法模型的RMSE与Holt_mul_dam的RMSE之比为：{:.2f}%'.format(Holt_mul_SM['rmse'] / np.sqrt(Holt_mul_dam_train.sse/730) * 100))
@@ -2281,8 +2241,8 @@ print('\n','生产系统、自定义、statsmodels中HoltWinters additive对比�
 # fit models
 HW_add_add_dam = ExponentialSmoothing(y_input_add[0][0:730+1], seasonal_periods=365, trend='add', seasonal='add', damped_trend=True).\
     fit(damping_trend=1, use_boxcox=None, method='basinhopping', use_brute=False)
-HWA_SM = test_smoothing_models.additive(list(y_input_add[0][0:730+1]), 365, steps_day-1)
-HWMA_SM = test_smoothing_models.multi_seasonal_add_day(list(y_input_add[0][0:730+1]))
+HWA_SM = smoothing_models.additive(list(y_input_add[0][0:730+1]), 365, steps_day-1)
+HWMA_SM = smoothing_models.multiseasonal_add_day(list(y_input_add[0][0:730+1]))
 HWA_WU = wualgorithm.additive(list(y_input_add[0][0:730+1]), 365, steps_day-1)
 
 # print figures
@@ -2295,7 +2255,6 @@ pd.concat([HW_add_add_dam.fittedvalues, HW_add_add_dam.forecast(steps_day-1)], i
 pd.concat([pd.Series(HWA_SM['fittedvalues']), pd.Series(HWA_SM['predict'])], ignore_index=True).rename('HWA_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
 pd.concat([pd.Series(HWMA_SM['fittedvalues']), pd.Series(HWMA_SM['predict'][:-1])], ignore_index=True).rename('HWMA_SM').plot(ax=ax_HoltWinters, color='g', legend=True)
 pd.concat([pd.Series(HWA_WU['fittedvalues']), pd.Series(HWA_WU['pred'])], ignore_index=True).rename('HWA_WU').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 # print statistics data
 print('在训练集上，自定义霍尔特温特斯加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWA_SM['rmse'] / np.sqrt(HW_add_add_dam.sse/(730+1)) * 100))
@@ -2314,8 +2273,8 @@ print('\n','生产系统、自定义、statsmodels中HoltWinters multiplicative�
 # fit models
 HW_add_mul_dam = ExponentialSmoothing(y_input_mul[0][0:730+1], seasonal_periods=365, trend='add', seasonal='mul', damped_trend=True).\
     fit(damping_trend=1, use_boxcox=None, method='basinhopping', use_brute=False)
-HWM_SM = test_smoothing_models.multiplicative(list(y_input_mul[0][0:730+1]), 365, steps_day-1)
-HWMM_SM = test_smoothing_models.multi_seasonal_mul_day(list(y_input_mul[0][0:730+1]))
+HWM_SM = smoothing_models.multiplicative(list(y_input_mul[0][0:730+1]), 365, steps_day-1)
+HWMM_SM = smoothing_models.multiseasonal_mul_day(list(y_input_mul[0][0:730+1]))
 HWM_WU = wualgorithm.multiplicative(list(y_input_mul[0][0:730+1]), 365, steps_day-1)
 
 # print figures
@@ -2328,7 +2287,6 @@ pd.concat([HW_add_mul_dam.fittedvalues, HW_add_mul_dam.forecast(steps_day-1)], i
 pd.concat([pd.Series(HWM_SM['fittedvalues']), pd.Series(HWM_SM['predict'])], ignore_index=True).rename('HWM_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
 pd.concat([pd.Series(HWMM_SM['fittedvalues']), pd.Series(HWMM_SM['predict'][:-1])], ignore_index=True).rename('HWMM_SM').plot(ax=ax_HoltWinters, color='g', legend=True)
 pd.concat([pd.Series(HWM_WU['fittedvalues']), pd.Series(HWM_WU['pred'])], ignore_index=True).rename('HWM_WU').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
 
 # print statistics data
 print('在训练集上，自定义霍尔特温特斯乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWM_SM['rmse'] / np.sqrt(HW_add_mul_dam.sse/(730+1)) * 100))
