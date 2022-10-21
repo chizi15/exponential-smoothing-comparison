@@ -66,8 +66,8 @@ statsmodels中可使用如下模型1：SimpleExpSmoothing().fit(optimized=True, 
 import pandas as pd
 import matplotlib.pyplot as plt
 from statsmodels.tsa.holtwinters import SimpleExpSmoothing, Holt, ExponentialSmoothing
-import test_smoothing_models
-import test2_smoothing_models
+# import test_smoothing_models
+# import test2_smoothing_models
 import wualgorithm
 import numpy as np
 import random
@@ -79,9 +79,9 @@ filterwarnings("ignore")
 
 ###########---------------set up and plot input data-----------------######################
 
-up_limit = 20 # 设置level、trend、season项的取值上限
+up_limit = 20  # 设置level、trend、season项的取值上限
 steps_day, steps_week = 28, 4
-length = [730+steps_day, 365+steps_day, 104+steps_week, 52+steps_week] # 代表每个序列的长度，分别为周、日序列的一年及两年。
+length = [730+steps_day, 365+steps_day, 104+steps_week, 52+steps_week]  # 代表每个序列的长度，分别为周、日序列的一年及两年。
 y_level, y_trend, y_season, y_noise, y_input_add, y_input_mul = [[]] * len(length), [[]] * len(length), [[]] * len(length), [[]] * len(length), [[]] * len(length), [[]] * len(length)
 
 weights = []
@@ -2376,87 +2376,87 @@ for i in range(0, len(length)):
 #     print('HoltWinters_730 y_input_add，HW_mul_mul_dam不可用，其MASE值为：{:.2f}'.format(MASE_HW_mul_mul_dam))
 
 
-#########################################---与自定义平滑类模型对比---###########################################
-print('生产系统、自定义、statsmodels中平滑类模型对比：')
-
-###################################---simple exponential smoothing compare, below---##################################
-print('\n','生产系统、自定义、statsmodels中simple exponential smoothing对比：')
-# fit models
-fit_SES_train = SimpleExpSmoothing(y_input_add[0][0:730]).fit(optimized=True, use_brute=False)
-SES_SM = test_smoothing_models.simple(list(y_input_add[0][0:730]), steps_day)
-SES_WU = wualgorithm.simple(list(y_input_add[0][0:730]), steps_day)
-
-# print figures
-plt.figure('730+28+compared SES y_input_add', figsize=(20,10))
-ax_HoltWinters = y_input_add[0].rename('y_input_add[0]').plot(color='k', legend='True')
-ax_HoltWinters.set_ylabel("amount")
-ax_HoltWinters.set_xlabel("day")
-xlim = plt.gca().set_xlim(0, length[0]-1)
-pd.concat([fit_SES_train.fittedvalues, fit_SES_train.forecast(steps_day)], ignore_index=True).rename('fit_SES_train')\
-    .plot(ax=ax_HoltWinters, color='r', legend=True)
-pd.concat([pd.Series(SES_SM['fittedvalues']), pd.Series(SES_SM['predict'])], ignore_index=True).rename('SES_SM')\
-    .plot(ax=ax_HoltWinters, color='b', legend=True)
-pd.concat([pd.Series(SES_WU['fittedvalues']), pd.Series(SES_WU['pred'])], ignore_index=True).rename('SES_WU')\
-    .plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
-
-# print statistics data
-print('在训练集上，自定义简单平滑模型的RMSE与SES的RMSE之比为：{:.2f}%'.format(SES_SM['rmse'] / np.sqrt(fit_SES_train.sse/730) * 100))
-print('在训练集上，生产系统简单平滑模型的RMSE与SES的RMSE之比为：{:.2f}%'.format(SES_WU['rmse'] / np.sqrt(fit_SES_train.sse/730) * 100), '\n')
-print('在验证集上，自定义简单平滑模型与SES的加权MASE值为：{:.2f}'.format(sum(abs((np.array(SES_SM['predict']) - y_input_add[0][730:730+steps_day].values) / (fit_SES_train.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values))
-    * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))))
-print('在验证集上，生产系统简单平滑模型与SES的加权MASE值为：{:.2f}'.format(sum(abs((np.array(SES_WU['pred']) - y_input_add[0][730:730+steps_day].values) / (fit_SES_train.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values))
-    * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))))
-#########################################------------------------------------------------------------------------
-
-######################################------Holt additive compare, below---------######################################
-print('\n','生产系统、自定义、statsmodels中Holt additive对比：')
-# fit models
-Holt_add_dam_train = Holt(y_input_add[0][0:730], exponential=False, damped_trend=True).fit(damping_trend=0.99, optimized=True, use_brute=False)
-Holt_add_SM = test_smoothing_models.linear(list(y_input_add[0][0:730]), steps_day)
-Holt_add_WU = wualgorithm.linear(list(y_input_add[0][0:730]), steps_day)
-
-# print figures
-plt.figure('730+28+compared Holt_add y_input_add', figsize=(20,10))
-ax_HoltWinters = y_input_add[0].rename('y_input_add[0]').plot(color='k', legend='True')
-ax_HoltWinters.set_ylabel("amount")
-ax_HoltWinters.set_xlabel("day")
-xlim = plt.gca().set_xlim(0, length[0]-1)
-pd.concat([Holt_add_dam_train.fittedvalues, Holt_add_dam_train.forecast(steps_day)], ignore_index=True).rename('Holt_add_dam_train').plot(ax=ax_HoltWinters, color='red', legend=True)
-pd.concat([pd.Series(Holt_add_SM['fittedvalues']), pd.Series(Holt_add_SM['predict'])], ignore_index=True).rename('Holt_add_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
-pd.concat([pd.Series(Holt_add_WU['fittedvalues']), pd.Series(Holt_add_WU['pred'])], ignore_index=True).rename('Holt_add_WU').plot(ax=ax_HoltWinters, color='y', legend=True)
-plt.show()
-
-# print statistics data
-print('在训练集上，自定义霍尔特加法模型的RMSE与Holt_add_dam的RMSE之比为：{:.2f}%'.format(Holt_add_SM['rmse'] / np.sqrt(Holt_add_dam_train.sse/730) * 100))
-print('在训练集上，生产系统霍尔特加法模型的RMSE与Holt_add_dam的RMSE之比为：{:.2f}%'.format(Holt_add_WU['rmse'] / np.sqrt(Holt_add_dam_train.sse/730) * 100), '\n')
-print('在验证集上，自定义霍尔特加法模型与Holt_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(Holt_add_SM['predict']) - y_input_add[0][730:730+steps_day].values) / (Holt_add_dam_train.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values))
-    * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))))
-print('在验证集上，生产系统霍尔特加法模型与Holt_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(Holt_add_WU['pred']) - y_input_add[0][730:730+steps_day].values) / (Holt_add_dam_train.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values))
-    * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))))
-#########################################--------------------------------------------------------------------
-
-##########################################---Holt multiplicative compare, below---##########################################
-print('\n','生产系统、自定义、statsmodels中Holt multiplicative对比：')
-# fit models
-Holt_mul_dam_train = Holt(y_input_add[0][0:730], exponential=True, damped_trend=True).fit(damping_trend=0.99, optimized=True, use_brute=False)
-Holt_mul_SM = test_smoothing_models.double_mul(list(y_input_add[0][0:730]), steps_day)
-
-# print figures
-plt.figure('730+28+compared Holt_mul y_input_add', figsize=(20,10))
-ax_HoltWinters = y_input_add[0].rename('y_input_add[0]').plot(color='k', legend='True')
-ax_HoltWinters.set_ylabel("amount")
-ax_HoltWinters.set_xlabel("day")
-xlim = plt.gca().set_xlim(0, length[0]-1)
-pd.concat([Holt_mul_dam_train.fittedvalues, Holt_mul_dam_train.forecast(steps_day)], ignore_index=True).rename('Holt_mul_dam_train').plot(ax=ax_HoltWinters, color='red', legend=True)
-pd.concat([pd.Series(Holt_mul_SM['fittedvalues']), pd.Series(Holt_mul_SM['predict'])], ignore_index=True).rename('Holt_mul_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
-plt.show()
-
-# print statistics data
-print('在训练集上，自定义霍尔特乘法模型的RMSE与Holt_mul_dam的RMSE之比为：{:.2f}%'.format(Holt_mul_SM['rmse'] / np.sqrt(Holt_mul_dam_train.sse/730) * 100), '\n')
-print('在验证集上，自定义霍尔特乘法模型与Holt_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(Holt_mul_SM['predict']) - y_input_add[0][730:730+steps_day].values) / (Holt_mul_dam_train.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values))
-    * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))))
-#########################################----------------------------------------------------------------------
+# #########################################---与自定义平滑类模型对比---###########################################
+# print('生产系统、自定义、statsmodels中平滑类模型对比：')
+#
+# ###################################---simple exponential smoothing compare, below---##################################
+# print('\n','生产系统、自定义、statsmodels中simple exponential smoothing对比：')
+# # fit models
+# fit_SES_train = SimpleExpSmoothing(y_input_add[0][0:730]).fit(optimized=True, use_brute=False)
+# SES_SM = test_smoothing_models.simple(list(y_input_add[0][0:730]), steps_day)
+# SES_WU = wualgorithm.simple(list(y_input_add[0][0:730]), steps_day)
+#
+# # print figures
+# plt.figure('730+28+compared SES y_input_add', figsize=(20,10))
+# ax_HoltWinters = y_input_add[0].rename('y_input_add[0]').plot(color='k', legend='True')
+# ax_HoltWinters.set_ylabel("amount")
+# ax_HoltWinters.set_xlabel("day")
+# xlim = plt.gca().set_xlim(0, length[0]-1)
+# pd.concat([fit_SES_train.fittedvalues, fit_SES_train.forecast(steps_day)], ignore_index=True).rename('fit_SES_train')\
+#     .plot(ax=ax_HoltWinters, color='r', legend=True)
+# pd.concat([pd.Series(SES_SM['fittedvalues']), pd.Series(SES_SM['predict'])], ignore_index=True).rename('SES_SM')\
+#     .plot(ax=ax_HoltWinters, color='b', legend=True)
+# pd.concat([pd.Series(SES_WU['fittedvalues']), pd.Series(SES_WU['pred'])], ignore_index=True).rename('SES_WU')\
+#     .plot(ax=ax_HoltWinters, color='y', legend=True)
+# plt.show()
+#
+# # print statistics data
+# print('在训练集上，自定义简单平滑模型的RMSE与SES的RMSE之比为：{:.2f}%'.format(SES_SM['rmse'] / np.sqrt(fit_SES_train.sse/730) * 100))
+# print('在训练集上，生产系统简单平滑模型的RMSE与SES的RMSE之比为：{:.2f}%'.format(SES_WU['rmse'] / np.sqrt(fit_SES_train.sse/730) * 100), '\n')
+# print('在验证集上，自定义简单平滑模型与SES的加权MASE值为：{:.2f}'.format(sum(abs((np.array(SES_SM['predict']) - y_input_add[0][730:730+steps_day].values) / (fit_SES_train.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values))
+#     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))))
+# print('在验证集上，生产系统简单平滑模型与SES的加权MASE值为：{:.2f}'.format(sum(abs((np.array(SES_WU['pred']) - y_input_add[0][730:730+steps_day].values) / (fit_SES_train.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values))
+#     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))))
+# #########################################------------------------------------------------------------------------
+#
+# ######################################------Holt additive compare, below---------######################################
+# print('\n','生产系统、自定义、statsmodels中Holt additive对比：')
+# # fit models
+# Holt_add_dam_train = Holt(y_input_add[0][0:730], exponential=False, damped_trend=True).fit(damping_trend=0.99, optimized=True, use_brute=False)
+# Holt_add_SM = test_smoothing_models.linear(list(y_input_add[0][0:730]), steps_day)
+# Holt_add_WU = wualgorithm.linear(list(y_input_add[0][0:730]), steps_day)
+#
+# # print figures
+# plt.figure('730+28+compared Holt_add y_input_add', figsize=(20,10))
+# ax_HoltWinters = y_input_add[0].rename('y_input_add[0]').plot(color='k', legend='True')
+# ax_HoltWinters.set_ylabel("amount")
+# ax_HoltWinters.set_xlabel("day")
+# xlim = plt.gca().set_xlim(0, length[0]-1)
+# pd.concat([Holt_add_dam_train.fittedvalues, Holt_add_dam_train.forecast(steps_day)], ignore_index=True).rename('Holt_add_dam_train').plot(ax=ax_HoltWinters, color='red', legend=True)
+# pd.concat([pd.Series(Holt_add_SM['fittedvalues']), pd.Series(Holt_add_SM['predict'])], ignore_index=True).rename('Holt_add_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
+# pd.concat([pd.Series(Holt_add_WU['fittedvalues']), pd.Series(Holt_add_WU['pred'])], ignore_index=True).rename('Holt_add_WU').plot(ax=ax_HoltWinters, color='y', legend=True)
+# plt.show()
+#
+# # print statistics data
+# print('在训练集上，自定义霍尔特加法模型的RMSE与Holt_add_dam的RMSE之比为：{:.2f}%'.format(Holt_add_SM['rmse'] / np.sqrt(Holt_add_dam_train.sse/730) * 100))
+# print('在训练集上，生产系统霍尔特加法模型的RMSE与Holt_add_dam的RMSE之比为：{:.2f}%'.format(Holt_add_WU['rmse'] / np.sqrt(Holt_add_dam_train.sse/730) * 100), '\n')
+# print('在验证集上，自定义霍尔特加法模型与Holt_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(Holt_add_SM['predict']) - y_input_add[0][730:730+steps_day].values) / (Holt_add_dam_train.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values))
+#     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))))
+# print('在验证集上，生产系统霍尔特加法模型与Holt_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(Holt_add_WU['pred']) - y_input_add[0][730:730+steps_day].values) / (Holt_add_dam_train.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values))
+#     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))))
+# #########################################--------------------------------------------------------------------
+#
+# ##########################################---Holt multiplicative compare, below---##########################################
+# print('\n','生产系统、自定义、statsmodels中Holt multiplicative对比：')
+# # fit models
+# Holt_mul_dam_train = Holt(y_input_add[0][0:730], exponential=True, damped_trend=True).fit(damping_trend=0.99, optimized=True, use_brute=False)
+# Holt_mul_SM = test_smoothing_models.double_mul(list(y_input_add[0][0:730]), steps_day)
+#
+# # print figures
+# plt.figure('730+28+compared Holt_mul y_input_add', figsize=(20,10))
+# ax_HoltWinters = y_input_add[0].rename('y_input_add[0]').plot(color='k', legend='True')
+# ax_HoltWinters.set_ylabel("amount")
+# ax_HoltWinters.set_xlabel("day")
+# xlim = plt.gca().set_xlim(0, length[0]-1)
+# pd.concat([Holt_mul_dam_train.fittedvalues, Holt_mul_dam_train.forecast(steps_day)], ignore_index=True).rename('Holt_mul_dam_train').plot(ax=ax_HoltWinters, color='red', legend=True)
+# pd.concat([pd.Series(Holt_mul_SM['fittedvalues']), pd.Series(Holt_mul_SM['predict'])], ignore_index=True).rename('Holt_mul_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
+# plt.show()
+#
+# # print statistics data
+# print('在训练集上，自定义霍尔特乘法模型的RMSE与Holt_mul_dam的RMSE之比为：{:.2f}%'.format(Holt_mul_SM['rmse'] / np.sqrt(Holt_mul_dam_train.sse/730) * 100), '\n')
+# print('在验证集上，自定义霍尔特乘法模型与Holt_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(Holt_mul_SM['predict']) - y_input_add[0][730:730+steps_day].values) / (Holt_mul_dam_train.forecast(steps_day).values - y_input_add[0][730:730+steps_day].values))
+#     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(1, steps_day+1)))))))
+# #########################################----------------------------------------------------------------------
 
 ##########################################---HoltWinters additive compare, below---##########################################
 print('\n','生产系统、自定义、statsmodels中HoltWinters additive 730 对比：')
@@ -2468,41 +2468,41 @@ weights = np.array(weights) / sum(weights)
 # fit models
 period = 360
 HW_add_add_dam = ExponentialSmoothing(y_input_add[0][0:730], seasonal_periods=period, trend='add', seasonal='add',
-                                      damped_trend=True, initialization_method='estimated',
-        # initial_level=np.average(y_input_add[0][0:730], weights=weights),
-        # initial_trend=np.array((sum(y_input_add[0][0:730][int(np.ceil(len(y_input_add[0][0:730]) / 2)):]) - sum(y_input_add[0][0:730][:int(np.floor(len(y_input_add[0][0:730]) / 2))])) / (np.floor(len(y_input_add[0][0:730]) / 2)) ** 2),
-        # initial_seasonal=np.array(y_input_add[0][0:730][:len(y_input_add[0][0:730]) // period * period]).reshape(-1, period).mean(axis=0) - np.average(y_input_add[0][0:730], weights=weights)
+                                      damped_trend=True, initialization_method='known',
+        initial_level=np.average(y_input_add[0][0:730], weights=weights),
+        initial_trend=np.array((sum(y_input_add[0][0:730][int(np.ceil(len(y_input_add[0][0:730]) / 2)):]) - sum(y_input_add[0][0:730][:int(np.floor(len(y_input_add[0][0:730]) / 2))])) / (np.floor(len(y_input_add[0][0:730]) / 2)) ** 2),
+        initial_seasonal=np.array(y_input_add[0][0:730][:len(y_input_add[0][0:730]) // period * period]).reshape(-1, period).mean(axis=0) - np.average(y_input_add[0][0:730], weights=weights)
                                       ).\
-    fit(damping_trend=1, use_boxcox=None, method='L-BFGS-B', use_brute=False)
-HWA_SM = test_smoothing_models.additive(list(y_input_add[0][0:730]), period, steps_day)
-HWA_SM2 = test2_smoothing_models.additive(list(y_input_add[0][0:730]), period, steps_day)
-HWMA_SM = test_smoothing_models.double_seasonal_add_add_day(list(y_input_add[0][0:730]), m_year=period, m_week=7, fc=steps_day)
+    fit(damping_trend=0.98, use_boxcox=None, method='ls', use_brute=False)
+# HWA_SM = test_smoothing_models.additive(list(y_input_add[0][0:730]), period, steps_day)
+# HWA_SM2 = test2_smoothing_models.additive(list(y_input_add[0][0:730]), period, steps_day)
+# HWMA_SM = test_smoothing_models.double_seasonal_add_add_day(list(y_input_add[0][0:730]), m_year=period, m_week=7, fc=steps_day)
 HWA_WU = wualgorithm.additive(list(y_input_add[0][0:730]), period, steps_day)
 
 # print figures
-plt.figure('730+27+compared HW y_input_add', figsize=(20,10))
+plt.figure(f'{len(y_input_add[0][0:730])}+{steps_day}+compared HW y_input_add[0]', figsize=(20,10))
 ax_HoltWinters = y_input_add[0].rename('y_input_add[0]').plot(color='k', legend='True')
 ax_HoltWinters.set_ylabel("amount")
 ax_HoltWinters.set_xlabel("day")
 xlim = plt.gca().set_xlim(0, length[0]-1)
 pd.concat([HW_add_add_dam.fittedvalues, HW_add_add_dam.forecast(steps_day)], ignore_index=True).rename('HW_add_add_dam').\
     plot(ax=ax_HoltWinters, color='red', legend=True)
-pd.concat([pd.Series(HWA_SM['fittedvalues']), pd.Series(HWA_SM['predict'])], ignore_index=True).rename('HWA_SM').\
-    plot(ax=ax_HoltWinters, color='b', legend=True)
-pd.concat([pd.Series(HWMA_SM['fittedvalues']), pd.Series(HWMA_SM['predict'])], ignore_index=True).rename('HWMA_SM').\
-    plot(ax=ax_HoltWinters, color='g', legend=True)
+# pd.concat([pd.Series(HWA_SM['fittedvalues']), pd.Series(HWA_SM['predict'])], ignore_index=True).rename('HWA_SM').\
+#     plot(ax=ax_HoltWinters, color='b', legend=True)
+# pd.concat([pd.Series(HWMA_SM['fittedvalues']), pd.Series(HWMA_SM['predict'])], ignore_index=True).rename('HWMA_SM').\
+#     plot(ax=ax_HoltWinters, color='g', legend=True)
 pd.concat([pd.Series(HWA_WU['fittedvalues']), pd.Series(HWA_WU['pred'])], ignore_index=True).rename('HWA_WU').\
     plot(ax=ax_HoltWinters, color='y', legend=True)
 plt.show()
 
 # print statistics data
-print('在训练集上，自定义霍尔特温特斯加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWA_SM['rmse'] / np.sqrt(HW_add_add_dam.sse/(730)) * 100))
-print('在训练集上，自定义霍尔特温特斯多重季节性加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWMA_SM['rmse'] / np.sqrt(HW_add_add_dam.sse/(730)) * 100))
+# print('在训练集上，自定义霍尔特温特斯加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWA_SM['rmse'] / np.sqrt(HW_add_add_dam.sse/(730)) * 100))
+# print('在训练集上，自定义霍尔特温特斯多重季节性加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWMA_SM['rmse'] / np.sqrt(HW_add_add_dam.sse/(730)) * 100))
 print('在训练集上，生产系统霍尔特温特斯加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWA_WU['rmse'] / np.sqrt(HW_add_add_dam.sse/(730)) * 100), '\n')
-print('在验证集上，自定义霍尔特温特斯加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWA_SM['predict']) - y_input_add[0][730:730+steps_day+1].values) / (HW_add_add_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day+1].values))
-    * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(steps_day, 0, -1)))))))
-print('在验证集上，自定义霍尔特温特斯多重季节性加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWMA_SM['predict']) - y_input_add[0][730:730+steps_day+1].values) / (HW_add_add_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day+1].values))
-    * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(steps_day, 0, -1)))))))
+# print('在验证集上，自定义霍尔特温特斯加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWA_SM['predict']) - y_input_add[0][730:730+steps_day+1].values) / (HW_add_add_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day+1].values))
+#     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(steps_day, 0, -1)))))))
+# print('在验证集上，自定义霍尔特温特斯多重季节性加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWMA_SM['predict']) - y_input_add[0][730:730+steps_day+1].values) / (HW_add_add_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day+1].values))
+#     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(steps_day, 0, -1)))))))
 print('在验证集上，生产系统霍尔特温特斯加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWA_WU['pred']) - y_input_add[0][730:730+steps_day+1].values) / (HW_add_add_dam.forecast(steps_day).values - y_input_add[0][730:730+steps_day+1].values))
     * (np.array(range(steps_day, 0, -1)) / sum(np.array(range(steps_day, 0, -1)))))))
 
@@ -2519,37 +2519,37 @@ HW_add_add_dam = ExponentialSmoothing(y_input_add[0][0:365+1], seasonal_periods=
                                       damped_trend=True, initialization_method='known',
         initial_level=np.average(y_input_add[0][0:365+1], weights=weights),
         initial_trend=np.array((sum(y_input_add[0][0:365+1][int(np.ceil(len(y_input_add[0][0:365+1]) / 2)):]) - sum(y_input_add[0][0:365+1][:int(np.floor(len(y_input_add[0][0:365+1]) / 2))])) / (np.floor(len(y_input_add[0][0:365+1]) / 2)) ** 2),
-        initial_seasonal=np.array(y_input_add[0][0:365+1][:len(y_input_add[0][0:365+1]) // period * period]).reshape(-1, period).mean(axis=0) - np.average(y_input_add[0][0:365+1], weights=weights)).\
-    fit(damping_trend=1, use_boxcox=None, method='L-BFGS-B', use_brute=False)
-HWA_SM = test_smoothing_models.additive(list(y_input_add[0][0:365+1]), period, steps_day-1)
-HWA_SM2 = test2_smoothing_models.additive(list(y_input_add[0][0:365+1]), period, steps_day-1)
-HWMA_SM = test_smoothing_models.double_seasonal_add_add_day(list(y_input_add[0][0:365+1]), m_year=period, m_week=7, fc=28-1)
+        initial_seasonal=np.array(y_input_add[0][0:365+1][:len(y_input_add[0][0:365+1]) // period * period]).reshape(-1, period).mean(axis=0) - np.average(y_input_add[0][0:365+1], weights=weights)
+                                      ).fit(damping_trend=0.98, use_boxcox=None, method='ls', use_brute=False)
+# HWA_SM = test_smoothing_models.additive(list(y_input_add[0][0:365+1]), period, steps_day-1)
+# HWA_SM2 = test2_smoothing_models.additive(list(y_input_add[0][0:365+1]), period, steps_day-1)
+# HWMA_SM = test_smoothing_models.double_seasonal_add_add_day(list(y_input_add[0][0:365+1]), m_year=period, m_week=7, fc=28-1)
 HWA_WU = wualgorithm.additive(list(y_input_add[0][0:365+1]), period, steps_day-1)
 
 # print figures
-plt.figure('366+27+compared HW y_input_add', figsize=(20,10))
+plt.figure(f'{len(y_input_add[0][0:365+1])}+{steps_day-1}+compared HW y_input_add', figsize=(20,10))
 ax_HoltWinters = y_input_add[0][:366+steps_day].rename('y_input_add[0][:366+steps_day]').plot(color='k', legend='True')
 ax_HoltWinters.set_ylabel("amount")
 ax_HoltWinters.set_xlabel("day")
 xlim = plt.gca().set_xlim(0, length[1]-1)
 pd.concat([HW_add_add_dam.fittedvalues, HW_add_add_dam.forecast(steps_day-1)], ignore_index=True).rename('HW_add_add_dam')\
     .plot(ax=ax_HoltWinters, color='red', legend=True)
-pd.concat([pd.Series(HWA_SM['fittedvalues']), pd.Series(HWA_SM['predict'])], ignore_index=True).rename('HWA_SM')\
-    .plot(ax=ax_HoltWinters, color='b', legend=True)
-pd.concat([pd.Series(HWMA_SM['fittedvalues']), pd.Series(HWMA_SM['predict'][:-1])], ignore_index=True).rename('HWMA_SM')\
-    .plot(ax=ax_HoltWinters, color='g', legend=True)
+# pd.concat([pd.Series(HWA_SM['fittedvalues']), pd.Series(HWA_SM['predict'])], ignore_index=True).rename('HWA_SM')\
+#     .plot(ax=ax_HoltWinters, color='b', legend=True)
+# pd.concat([pd.Series(HWMA_SM['fittedvalues']), pd.Series(HWMA_SM['predict'][:-1])], ignore_index=True).rename('HWMA_SM')\
+#     .plot(ax=ax_HoltWinters, color='g', legend=True)
 pd.concat([pd.Series(HWA_WU['fittedvalues']), pd.Series(HWA_WU['pred'])], ignore_index=True).rename('HWA_WU')\
     .plot(ax=ax_HoltWinters, color='y', legend=True)
 plt.show()
 
 # print statistics data
-print('在训练集上，自定义霍尔特温特斯加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWA_SM['rmse'] / np.sqrt(HW_add_add_dam.sse/(365+1)) * 100))
-print('在训练集上，自定义霍尔特温特斯多重季节性加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWMA_SM['rmse'] / np.sqrt(HW_add_add_dam.sse/(365+1)) * 100))
+# print('在训练集上，自定义霍尔特温特斯加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWA_SM['rmse'] / np.sqrt(HW_add_add_dam.sse/(365+1)) * 100))
+# print('在训练集上，自定义霍尔特温特斯多重季节性加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWMA_SM['rmse'] / np.sqrt(HW_add_add_dam.sse/(365+1)) * 100))
 print('在训练集上，生产系统霍尔特温特斯加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWA_WU['rmse'] / np.sqrt(HW_add_add_dam.sse/(365+1)) * 100), '\n')
-print('在验证集上，自定义霍尔特温特斯加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWA_SM['predict']) - y_input_add[0][365+1:365+1+steps_day-1].values) / (HW_add_add_dam.forecast(steps_day-1).values - y_input_add[0][365+1:365+1+steps_day-1].values))
-    * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
-print('在验证集上，自定义霍尔特温特斯多重季节性加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWMA_SM['predict'][:-1]) - y_input_add[0][365+1:365+1+steps_day-1].values) / (HW_add_add_dam.forecast(steps_day-1).values - y_input_add[0][365+1:365+1+steps_day-1].values))
-    * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
+# print('在验证集上，自定义霍尔特温特斯加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWA_SM['predict']) - y_input_add[0][365+1:365+1+steps_day-1].values) / (HW_add_add_dam.forecast(steps_day-1).values - y_input_add[0][365+1:365+1+steps_day-1].values))
+#     * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
+# print('在验证集上，自定义霍尔特温特斯多重季节性加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWMA_SM['predict'][:-1]) - y_input_add[0][365+1:365+1+steps_day-1].values) / (HW_add_add_dam.forecast(steps_day-1).values - y_input_add[0][365+1:365+1+steps_day-1].values))
+#     * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
 print('在验证集上，生产系统霍尔特温特斯加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWA_WU['pred']) - y_input_add[0][365+1:365+1+steps_day-1].values) / (HW_add_add_dam.forecast(steps_day-1).values - y_input_add[0][365+1:365+1+steps_day-1].values))
     * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
 #########################################----------------------------------------------------------------------------
@@ -2563,36 +2563,36 @@ weights = np.array(weights) / sum(weights)
 
 # fit models
 HW_add_mul_dam = ExponentialSmoothing(y_input_mul[0][0:730+1], seasonal_periods=350, trend='add', seasonal='mul',
-                                      damped_trend=True, initialization_method='estimated',
-        # initial_level=np.average(y_input_mul[0][0:730+1], weights=weights),
-        # initial_trend=np.array((sum(y_input_mul[0][0:730+1][int(np.ceil(len(y_input_mul[0][0:730+1]) / 2)):]) - sum(y_input_mul[0][0:730+1][:int(np.floor(len(y_input_mul[0][0:730+1]) / 2))])) / (np.floor(len(y_input_mul[0][0:730+1]) / 2)) ** 2),
-        # initial_seasonal=np.array(y_input_mul[0][0:730+1][:len(y_input_mul[0][0:730+1]) // 350 * 350]).reshape(-1, 350).mean(axis=0) - np.average(y_input_mul[0][0:730+1], weights=weights)
+                                      damped_trend=True, initialization_method='known',
+        initial_level=np.average(y_input_mul[0][0:730+1], weights=weights),
+        initial_trend=np.array((sum(y_input_mul[0][0:730+1][int(np.ceil(len(y_input_mul[0][0:730+1]) / 2)):]) - sum(y_input_mul[0][0:730+1][:int(np.floor(len(y_input_mul[0][0:730+1]) / 2))])) / (np.floor(len(y_input_mul[0][0:730+1]) / 2)) ** 2),
+        initial_seasonal=np.array(y_input_mul[0][0:730+1][:len(y_input_mul[0][0:730+1]) // 350 * 350]).reshape(-1, 350).mean(axis=0) - np.average(y_input_mul[0][0:730+1], weights=weights)
                                       ).\
-    fit(damping_trend=1, use_boxcox=None, method='L-BFGS-B', use_brute=False)
-HWM_SM = test_smoothing_models.multiplicative(list(y_input_mul[0][0:730+1]), 350, steps_day-1)
-HWMM_SM = test_smoothing_models.multiseasonal_mul_day(list(y_input_mul[0][0:730+1]))
+    fit(damping_trend=0.98, use_boxcox=None, method='ls', use_brute=False)
+# HWM_SM = test_smoothing_models.multiplicative(list(y_input_mul[0][0:730+1]), 350, steps_day-1)
+# HWMM_SM = test_smoothing_models.multiseasonal_mul_day(list(y_input_mul[0][0:730+1]))
 HWM_WU = wualgorithm.multiplicative(list(y_input_mul[0][0:730+1]), 350, steps_day-1)
 
 # print figures
-plt.figure('731+27+compared HW y_input_mul', figsize=(20,10))
+plt.figure(f'{len(y_input_mul[0][0:730+1])}+{steps_day-1}+compared HW y_input_mul', figsize=(20,10))
 ax_HoltWinters = y_input_mul[0].rename('y_input_mul[0]').plot(color='k', legend='True')
 ax_HoltWinters.set_ylabel("amount")
 ax_HoltWinters.set_xlabel("day")
 xlim = plt.gca().set_xlim(0, length[0]-1)
 pd.concat([HW_add_mul_dam.fittedvalues, HW_add_mul_dam.forecast(steps_day-1)], ignore_index=True).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='red', legend=True)
-pd.concat([pd.Series(HWM_SM['fittedvalues']), pd.Series(HWM_SM['predict'])], ignore_index=True).rename('HWM_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
-pd.concat([pd.Series(HWMM_SM['fittedvalues']), pd.Series(HWMM_SM['predict'][:-1])], ignore_index=True).rename('HWMM_SM').plot(ax=ax_HoltWinters, color='g', legend=True)
+# pd.concat([pd.Series(HWM_SM['fittedvalues']), pd.Series(HWM_SM['predict'])], ignore_index=True).rename('HWM_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
+# pd.concat([pd.Series(HWMM_SM['fittedvalues']), pd.Series(HWMM_SM['predict'][:-1])], ignore_index=True).rename('HWMM_SM').plot(ax=ax_HoltWinters, color='g', legend=True)
 pd.concat([pd.Series(HWM_WU['fittedvalues']), pd.Series(HWM_WU['pred'])], ignore_index=True).rename('HWM_WU').plot(ax=ax_HoltWinters, color='y', legend=True)
 plt.show()
 
 # print statistics data
-print('在训练集上，自定义霍尔特温特斯乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWM_SM['rmse'] / np.sqrt(HW_add_mul_dam.sse/(730+1)) * 100))
-print('在训练集上，自定义霍尔特温特斯多重季节性乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWMM_SM['rmse'] / np.sqrt(HW_add_mul_dam.sse/(730+1)) * 100))
+# print('在训练集上，自定义霍尔特温特斯乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWM_SM['rmse'] / np.sqrt(HW_add_mul_dam.sse/(730+1)) * 100))
+# print('在训练集上，自定义霍尔特温特斯多重季节性乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWMM_SM['rmse'] / np.sqrt(HW_add_mul_dam.sse/(730+1)) * 100))
 print('在训练集上，生产系统霍尔特温特斯乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWM_WU['rmse'] / np.sqrt(HW_add_mul_dam.sse/(730+1)) * 100), '\n')
-print('在验证集上，自定义霍尔特温特斯乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWM_SM['predict']) - y_input_mul[0][730+1:730+1+steps_day-1].values) / (HW_add_mul_dam.forecast(steps_day-1).values - y_input_mul[0][730+1:730+1+steps_day-1].values))
-    * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
-print('在验证集上，自定义霍尔特温特斯多重季节性乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWMM_SM['predict'][:-1]) - y_input_mul[0][730+1:730+1+steps_day-1].values) / (HW_add_mul_dam.forecast(steps_day-1).values - y_input_mul[0][730+1:730+1+steps_day-1].values))
-    * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
+# print('在验证集上，自定义霍尔特温特斯乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWM_SM['predict']) - y_input_mul[0][730+1:730+1+steps_day-1].values) / (HW_add_mul_dam.forecast(steps_day-1).values - y_input_mul[0][730+1:730+1+steps_day-1].values))
+#     * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
+# print('在验证集上，自定义霍尔特温特斯多重季节性乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWMM_SM['predict'][:-1]) - y_input_mul[0][730+1:730+1+steps_day-1].values) / (HW_add_mul_dam.forecast(steps_day-1).values - y_input_mul[0][730+1:730+1+steps_day-1].values))
+#     * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
 print('在验证集上，生产系统霍尔特温特斯乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWM_WU['pred']) - y_input_mul[0][730+1:730+1+steps_day-1].values) / (HW_add_mul_dam.forecast(steps_day-1).values - y_input_mul[0][730+1:730+1+steps_day-1].values))
     * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
 #########################################---------------------------------------------------------------------------
@@ -2608,31 +2608,31 @@ HW_add_mul_dam = ExponentialSmoothing(y_input_mul[0][0:365+1], seasonal_periods=
                                       damped_trend=True, initialization_method='known',
         initial_level=np.average(y_input_mul[0][0:365+1], weights=weights),
         initial_trend=np.array((sum(y_input_mul[0][0:365+1][int(np.ceil(len(y_input_mul[0][0:365+1]) / 2)):]) - sum(y_input_mul[0][0:365+1][:int(np.floor(len(y_input_mul[0][0:365+1]) / 2))])) / (np.floor(len(y_input_mul[0][0:365+1]) / 2)) ** 2),
-        initial_seasonal=np.array(y_input_mul[0][0:365+1][:len(y_input_mul[0][0:365+1]) // 330 * 330]).reshape(-1, 330).mean(axis=0) - np.average(y_input_mul[0][0:365+1], weights=weights)).\
-    fit(damping_trend=1, use_boxcox=None, method='L-BFGS-B', use_brute=False)
-HWM_SM = test_smoothing_models.multiplicative(list(y_input_mul[0][0:365+1]), 330, steps_day-1)
-HWMM_SM = test_smoothing_models.multiseasonal_mul_day(list(y_input_mul[0][0:365+1]))
+        initial_seasonal=np.array(y_input_mul[0][0:365+1][:len(y_input_mul[0][0:365+1]) // 330 * 330]).reshape(-1, 330).mean(axis=0) - np.average(y_input_mul[0][0:365+1], weights=weights)
+                                      ).fit(damping_trend=.98, use_boxcox=None, method='ls', use_brute=False)
+# HWM_SM = test_smoothing_models.multiplicative(list(y_input_mul[0][0:365+1]), 330, steps_day-1)
+# HWMM_SM = test_smoothing_models.multiseasonal_mul_day(list(y_input_mul[0][0:365+1]))
 HWM_WU = wualgorithm.multiplicative(list(y_input_mul[0][0:365+1]), 330, steps_day-1)
 
 # print figures
-plt.figure('366+27+compared HW y_input_mul', figsize=(20,10))
+plt.figure(f'{len(y_input_mul[0][0:365+1])}+{steps_day-1}+compared HW y_input_mul', figsize=(20,10))
 ax_HoltWinters = y_input_mul[0][:366+steps_day].rename('y_input_mul[0][:366+steps_day]').plot(color='k', legend='True')
 ax_HoltWinters.set_ylabel("amount")
 ax_HoltWinters.set_xlabel("day")
 xlim = plt.gca().set_xlim(0, length[1]-1)
 pd.concat([HW_add_mul_dam.fittedvalues, HW_add_mul_dam.forecast(steps_day-1)], ignore_index=True).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='red', legend=True)
-pd.concat([pd.Series(HWM_SM['fittedvalues']), pd.Series(HWM_SM['predict'])], ignore_index=True).rename('HWM_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
-pd.concat([pd.Series(HWMM_SM['fittedvalues']), pd.Series(HWMM_SM['predict'][:-1])], ignore_index=True).rename('HWMM_SM').plot(ax=ax_HoltWinters, color='g', legend=True)
+# pd.concat([pd.Series(HWM_SM['fittedvalues']), pd.Series(HWM_SM['predict'])], ignore_index=True).rename('HWM_SM').plot(ax=ax_HoltWinters, color='b', legend=True)
+# pd.concat([pd.Series(HWMM_SM['fittedvalues']), pd.Series(HWMM_SM['predict'][:-1])], ignore_index=True).rename('HWMM_SM').plot(ax=ax_HoltWinters, color='g', legend=True)
 pd.concat([pd.Series(HWM_WU['fittedvalues']), pd.Series(HWM_WU['pred'])], ignore_index=True).rename('HWM_WU').plot(ax=ax_HoltWinters, color='y', legend=True)
 plt.show()
 
 # print statistics data
-print('在训练集上，自定义霍尔特温特斯乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWM_SM['rmse'] / np.sqrt(HW_add_mul_dam.sse/(365+1)) * 100))
-print('在训练集上，自定义霍尔特温特斯多重季节性乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWMM_SM['rmse'] / np.sqrt(HW_add_mul_dam.sse/(365+1)) * 100))
+# print('在训练集上，自定义霍尔特温特斯乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWM_SM['rmse'] / np.sqrt(HW_add_mul_dam.sse/(365+1)) * 100))
+# print('在训练集上，自定义霍尔特温特斯多重季节性乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWMM_SM['rmse'] / np.sqrt(HW_add_mul_dam.sse/(365+1)) * 100))
 print('在训练集上，生产系统霍尔特温特斯乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWM_WU['rmse'] / np.sqrt(HW_add_mul_dam.sse/(365+1)) * 100), '\n')
-print('在验证集上，自定义霍尔特温特斯乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWM_SM['predict']) - y_input_mul[0][365+1:365+1+steps_day-1].values) / (HW_add_mul_dam.forecast(steps_day-1).values - y_input_mul[0][365+1:365+1+steps_day-1].values))
-    * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
-print('在验证集上，自定义霍尔特温特斯多重季节性乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWMM_SM['predict'][:-1]) - y_input_mul[0][365+1:365+1+steps_day-1].values) / (HW_add_mul_dam.forecast(steps_day-1).values - y_input_mul[0][365+1:365+1+steps_day-1].values))
-    * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
+# print('在验证集上，自定义霍尔特温特斯乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWM_SM['predict']) - y_input_mul[0][365+1:365+1+steps_day-1].values) / (HW_add_mul_dam.forecast(steps_day-1).values - y_input_mul[0][365+1:365+1+steps_day-1].values))
+#     * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
+# print('在验证集上，自定义霍尔特温特斯多重季节性乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWMM_SM['predict'][:-1]) - y_input_mul[0][365+1:365+1+steps_day-1].values) / (HW_add_mul_dam.forecast(steps_day-1).values - y_input_mul[0][365+1:365+1+steps_day-1].values))
+#     * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
 print('在验证集上，生产系统霍尔特温特斯乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWM_WU['pred']) - y_input_mul[0][365+1:365+1+steps_day-1].values) / (HW_add_mul_dam.forecast(steps_day-1).values - y_input_mul[0][365+1:365+1+steps_day-1].values))
     * (np.array(range(steps_day-1, 0, -1)) / sum(np.array(range(1, steps_day)))))))
