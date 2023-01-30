@@ -77,238 +77,282 @@ category = 3  # 1：日序>182，非节假日，m=7；2：周序>52+shift，非�
 period = 365
 # 当序列长度在一至两个周期内，序列长度至少要给一个周期+shift，shift越大越好，特别是对于乘法模型；
 # 更稳妥的做法是，不管序列长度是几倍周期，不管是哪种季节性模型，都+shift，即使序列长度>整数倍周期，而不是刚好等于整数倍周期。
-shift = 70
+shift = 40
 steps_day = shift + 4*7
 steps_week = shift + 4*1
 length = [period*2 + steps_day, period + steps_day, period*2 + steps_week, period + steps_week]  # 代表每个序列的长度，分别为周、日序列的一年及两年。
 
 
 acct_pred_com_stk.sort_values(by=['organ', 'class', 'sort', 'code', 'busdate'], ascending=True, inplace=True)
+# 按销量中位数>0筛选一次code
 code_fitter = acct_pred_com_stk_grup.median()[acct_pred_com_stk_grup.median()['fix_amount'] > 0]['code']
 acct_pred_com_stk_fitter = acct_pred_com_stk[acct_pred_com_stk['code'].isin(code_fitter)]
+# 按code点数初步筛选一次code
+series = acct_pred_com_stk_fitter['code'].value_counts() > period + shift
+code_fitter_2 = series[series].index
+acct_pred_com_stk_fitter_2 = acct_pred_com_stk_fitter[acct_pred_com_stk_fitter['code'].isin(code_fitter_2)]
+# acct_pred_com_stk_fitter_2['code'].value_counts()
+# acct_pred_com_stk_fitter['code'][(acct_pred_com_stk_fitter['code'].value_counts() > period + shift)].values
 
-
-single_item = acct_pred_com_stk_fitter[acct_pred_com_stk_fitter['code'] == code_fitter.values[0]].reset_index()
+single_item = acct_pred_com_stk_fitter_2[acct_pred_com_stk_fitter_2['code'] == code_fitter_2.values[0]].reset_index()
 sin_itm_amt = single_item['fix_amount']
 train = single_item[single_item['busdate'] < seg_day][-(period*2+shift):]['fix_amount']
 valid = single_item[~(single_item['busdate'] < seg_day)]['fix_amount']
 
+if (len(train) > period + shift) & (len(valid) > 0):  # 筛选训练集长度大于一个周期+shift，且验证集上有销售的单品，用三参数模型进行测试
 
-if moving_holiday == False:
-    if category == 1:  # 日序，非节假日
-        alpha, beta, gamma = (0, 1/10), (0, 1/10), (0, 1/2)
-    elif category == 2:  # 周序，非节假日
-        alpha, beta, gamma = (0, 1/5), (0, 1/5), (0, 2/3)
-    elif category == 3:  # 固定假日，暂时只用日序
-        alpha, beta, gamma = (0, 1), (0, 1), (0, 1)
+    if moving_holiday == False:
+        if category == 1:  # 日序，非节假日
+            alpha, beta, gamma = (0, 1/10), (0, 1/10), (0, 1/2)
+        elif category == 2:  # 周序，非节假日
+            alpha, beta, gamma = (0, 1/5), (0, 1/5), (0, 2/3)
+        elif category == 3:  # 固定假日，暂时只用日序
+            alpha, beta, gamma = (0, 1), (0, 1), (0, 1)
+        else:
+            raise ValueError('类型category只有三种取值：1,2,3')
+        n = 0  # 记录使用least square做目标函数和求解成功的次数
+
+        if len(train) > 2*period + shift:
+            #####################################---HoltWinters additive compare, below---###################################
+            print('\n',f'生产系统、自定义、statsmodels中HoltWinters additive {period*2+shift} 对比：')
+            weights = []
+            for i in range(1, len(train) + 1):
+                weights.append(i / len(train))
+            weights = np.array(weights) / sum(weights)
+
+            # fit models
+            try:
+                HW_add_add_dam = ExponentialSmoothing(train, seasonal_periods=period, trend='add', seasonal='add',
+                                                      damped_trend=True, initialization_method='known',
+                        bounds={'smoothing_level': alpha, 'smoothing_trend': beta, 'smoothing_seasonal': gamma},
+                        initial_level=np.average(train, weights=weights),
+                        initial_trend=np.array((sum(train[int(np.ceil(len(train) / 2)):]) - sum(train[:int(np.floor(len(train) / 2))])) / (np.floor(len(train) / 2)) ** 2),
+                        initial_seasonal=np.array(train[:len(train) // period * period]).reshape(-1, period).mean(axis=0) - np.average(train, weights=weights)
+                                                      ).\
+                    fit(damping_trend=.98, use_boxcox=None, method='ls', use_brute=False)
+                n += 1
+            except Exception as e:
+                HW_add_add_dam = ExponentialSmoothing(train, seasonal_periods=period, trend='add', seasonal='add',
+                                                      damped_trend=True, initialization_method='known',
+                        bounds={'smoothing_level': alpha, 'smoothing_trend': beta, 'smoothing_seasonal': gamma},
+                        initial_level=np.average(train, weights=weights),
+                        initial_trend=np.array((sum(train[int(np.ceil(len(train) / 2)):]) - sum(train[:int(np.floor(len(train) / 2))])) / (np.floor(len(train) / 2)) ** 2),
+                        initial_seasonal=np.array(train[:len(train) // period * period]).reshape(-1, period).mean(axis=0) - np.average(train, weights=weights)
+                                                      ).\
+                    fit(damping_trend=.98, use_boxcox=None, method='L-BFGS-B', use_brute=False)
+                print(f'ls: {e}, 改用L-BFGS-B做梯度下降求解参数，此时目标函数为极大似然估计的形式')
+            print(f'parameters (statsmodels): alpha {round(HW_add_add_dam.params["smoothing_level"], 3)}, '
+                  f'beta {round(HW_add_add_dam.params["smoothing_trend"], 3)}, '
+                  f'gamma {round(HW_add_add_dam.params["smoothing_seasonal"], 3)}')
+            HWA_WU = wualgorithm.additive(list(train), period, len(valid))
+
+            # print figures
+            plt.figure(f'{len(train)}+{len(valid)}+compared HW train', figsize=(20,10))
+            ax_HoltWinters = train.rename('train').plot(color='k', legend='True')
+            ax_HoltWinters.set_ylabel("amount")
+            ax_HoltWinters.set_xlabel("day")
+            xlim = plt.gca().set_xlim(0, length[0]-1)
+            pd.concat([HW_add_add_dam.fittedvalues, HW_add_add_dam.forecast(len(valid))], ignore_index=True).rename('HW_add_add_dam').\
+                plot(ax=ax_HoltWinters, color='red', legend=True)
+            pd.concat([pd.Series(HWA_WU['fittedvalues']), pd.Series(HWA_WU['pred'])], ignore_index=True).rename('HWA_WU').\
+                plot(ax=ax_HoltWinters, color='y', legend=True)
+            plt.show()
+
+            # print statistics data
+            print('在训练集上，生产系统霍尔特温特斯加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWA_WU['rmse'] / np.sqrt(HW_add_add_dam.sse/(period*2)) * 100))
+            print('在验证集上，生产系统霍尔特温特斯加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWA_WU['pred']) - train[period*2:period*2+len(valid)].values) / (HW_add_add_dam.forecast(len(valid)).values - train[period*2:period*2+len(valid)].values))
+                * (np.array(range(len(valid), 0, -1)) / sum(np.array(range(len(valid), 0, -1)))))))
+
+            #####################################---HoltWinters multiplicative compare, below---###################################
+            print('\n', '生产系统、自定义、statsmodels中HoltWinters multiplicative对比：')
+            weights = []
+            for i in range(1, len((train + 1)[-(period * 2 + shift):]) + 1):
+                weights.append(i / len((train + 1)[-(period * 2 + shift):]))
+            weights = np.array(weights) / sum(weights)
+
+            # fit models
+            try:
+                HW_add_mul_dam = ExponentialSmoothing((train + 1)[-(period * 2 + shift):], seasonal_periods=period,
+                                                      trend='add', seasonal='mul',
+                                                      damped_trend=True, initialization_method='known',
+                                                      bounds={'smoothing_level': alpha, 'smoothing_trend': beta,
+                                                              'smoothing_seasonal': gamma},
+                                                      initial_level=np.average((train + 1)[-(period * 2 + shift):],
+                                                                               weights=weights),
+                                                      initial_trend=np.array((sum((train + 1)[-(period * 2 + shift):][
+                                                                                  int(np.ceil(len((train + 1)[
+                                                                                                  0:period * 2 + shift]) / 2)):]) - sum(
+                                                          (train + 1)[-(period * 2 + shift):][:int(np.floor(
+                                                              len((train + 1)[-(period * 2 + shift):]) / 2))])) / (
+                                                                                 np.floor(len((train + 1)[
+                                                                                              0:period * 2 + shift]) / 2)) ** 2),
+                                                      initial_seasonal=np.array((train + 1)[-(period * 2 + shift):][:len(
+                                                          (train + 1)[
+                                                          0:period * 2 + shift]) // period * period]).reshape(-1,
+                                                                                                              period).mean(
+                                                          axis=0) - np.average((train + 1)[-(period * 2 + shift):],
+                                                                               weights=weights)
+                                                      ). \
+                    fit(damping_trend=0.98, use_boxcox=None, method='ls', use_brute=False)
+                n += 1
+            except Exception as e:
+                HW_add_mul_dam = ExponentialSmoothing((train + 1)[-(period * 2 + shift):], seasonal_periods=period,
+                                                      trend='add', seasonal='mul',
+                                                      damped_trend=True, initialization_method='known',
+                                                      bounds={'smoothing_level': alpha, 'smoothing_trend': beta,
+                                                              'smoothing_seasonal': gamma},
+                                                      initial_level=np.average((train + 1)[-(period * 2 + shift):],
+                                                                               weights=weights),
+                                                      initial_trend=np.array((sum((train + 1)[-(period * 2 + shift):][
+                                                                                  int(np.ceil(len((train + 1)[
+                                                                                                  0:period * 2 + shift]) / 2)):]) - sum(
+                                                          (train + 1)[-(period * 2 + shift):][:int(np.floor(
+                                                              len((train + 1)[-(period * 2 + shift):]) / 2))])) / (
+                                                                                 np.floor(len((train + 1)[
+                                                                                              0:period * 2 + shift]) / 2)) ** 2),
+                                                      initial_seasonal=np.array((train + 1)[-(period * 2 + shift):][:len(
+                                                          (train + 1)[
+                                                          0:period * 2 + shift]) // period * period]).reshape(-1,
+                                                                                                              period).mean(
+                                                          axis=0) - np.average((train + 1)[-(period * 2 + shift):],
+                                                                               weights=weights)
+                                                      ). \
+                    fit(damping_trend=0.98, use_boxcox=None, method='L-BFGS-B', use_brute=False)
+                print(f'ls: {e}, 改用L-BFGS-B做梯度下降求解参数，此时目标函数为极大似然估计的形式')
+            print(f'parameters (statsmodels): alpha {round(HW_add_mul_dam.params["smoothing_level"], 3)}, '
+                  f'beta {round(HW_add_mul_dam.params["smoothing_trend"], 3)}, '
+                  f'gamma {round(HW_add_mul_dam.params["smoothing_seasonal"], 3)}')
+            HWM_WU = wualgorithm.multiplicative(list((train + 1)[-(period * 2 + shift):]), period, len(valid))
+
+            # print figures
+            plt.figure(f'{len((train + 1)[-(period * 2 + shift):])}+{len(valid)}+compared HW y_input_mul',
+                       figsize=(20, 10))
+            ax_HoltWinters = (train + 1).rename('(train+1)').plot(color='k', legend='True')
+            ax_HoltWinters.set_ylabel("amount")
+            ax_HoltWinters.set_xlabel("day")
+            xlim = plt.gca().set_xlim(0, length[0] - 1)
+            pd.concat([HW_add_mul_dam.fittedvalues, HW_add_mul_dam.forecast(len(valid))], ignore_index=True).rename(
+                'HW_add_mul_dam').plot(ax=ax_HoltWinters, color='red', legend=True)
+            pd.concat([pd.Series(HWM_WU['fittedvalues']), pd.Series(HWM_WU['pred'])], ignore_index=True).rename(
+                'HWM_WU').plot(ax=ax_HoltWinters, color='y', legend=True)
+            plt.show()
+
+            # print statistics data
+            print('在训练集上，生产系统霍尔特温特斯乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.
+                  format(HWM_WU['rmse'] / np.sqrt(HW_add_mul_dam.sse / (period * 2 + shift)) * 100))
+            print('在验证集上，生产系统霍尔特温特斯乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.
+                  format(
+                sum(abs((np.array(HWM_WU['pred']) - (sin_itm_amt + 1)[period * 2:period * 2 + len(valid)].values) /
+                        (HW_add_mul_dam.forecast(len(valid)).values - (sin_itm_amt + 1)[
+                                                                      period * 2:period * 2 + len(valid)].values))
+                    * (np.array(range(len(valid), 0, -1)) / sum(np.array(range(1, len(valid))))))))
+            #########################################---------------------------------------------------------------------------
+
+        else:
+            #########-----------------HoltWinters additive compare, below--------------------------------------
+            print('\n',f'生产系统、自定义、statsmodels中HoltWinters additive {period} 对比：')
+            weights = []
+            for i in range(1, len(train[-(period+shift):]) + 1):
+                weights.append(i / len(train[-(period+shift):]))
+            weights = np.array(weights) / sum(weights)
+
+            # fit models
+            try:
+                HW_add_add_dam = ExponentialSmoothing(train[-(period+shift):], seasonal_periods=period, trend='add', seasonal='add',
+                                                      damped_trend=True, initialization_method='known',
+                                                      bounds={'smoothing_level': alpha, 'smoothing_trend': beta,
+                                                              'smoothing_seasonal': gamma},
+                        initial_level=np.average(train[-(period+shift):], weights=weights),
+                        initial_trend=np.array((sum(train[-(period+shift):][int(np.ceil(len(train[-(period+shift):]) / 2)):]) - sum(train[-(period+shift):][:int(np.floor(len(train[-(period+shift):]) / 2))])) / (np.floor(len(train[-(period+shift):]) / 2)) ** 2),
+                        initial_seasonal=np.array(train[-(period+shift):][:len(train[-(period+shift):]) // period * period]).reshape(-1, period).mean(axis=0) - np.average(train[-(period+shift):], weights=weights)
+                                                      ).fit(damping_trend=.98, use_boxcox=None, method='ls', use_brute=False)
+                n += 1
+            except Exception as e:
+                HW_add_add_dam = ExponentialSmoothing(train[-(period+shift):], seasonal_periods=period, trend='add', seasonal='add',
+                                                      damped_trend=True, initialization_method='known',
+                                                      bounds={'smoothing_level': alpha, 'smoothing_trend': beta,
+                                                              'smoothing_seasonal': gamma},
+                        initial_level=np.average(train[-(period+shift):], weights=weights),
+                        initial_trend=np.array((sum(train[-(period+shift):][int(np.ceil(len(train[-(period+shift):]) / 2)):]) - sum(train[-(period+shift):][:int(np.floor(len(train[-(period+shift):]) / 2))])) / (np.floor(len(train[-(period+shift):]) / 2)) ** 2),
+                        initial_seasonal=np.array(train[-(period+shift):][:len(train[-(period+shift):]) // period * period]).reshape(-1, period).mean(axis=0) - np.average(train[-(period+shift):], weights=weights)
+                                                      ).fit(damping_trend=.98, use_boxcox=None, method='L-BFGS-B', use_brute=False)
+                print(f'ls: {e}, 改用L-BFGS-B做梯度下降求解参数，此时目标函数为极大似然估计的形式')
+            print(f'parameters (statsmodels): alpha {round(HW_add_add_dam.params["smoothing_level"], 3)}, '
+                  f'beta {round(HW_add_add_dam.params["smoothing_trend"], 3)}, '
+                  f'gamma {round(HW_add_add_dam.params["smoothing_seasonal"], 3)}')
+            HWA_WU = wualgorithm.additive(list(train[-(period+shift):]), period, len(valid))
+
+            # print figures
+            plt.figure(f'{len(train[-(period+shift):])}+{len(valid)}+compared HW y_input_add', figsize=(20,10))
+            ax_HoltWinters = train[:366+steps_day].rename('train[:366+steps_day]').plot(color='k', legend='True')
+            ax_HoltWinters.set_ylabel("amount")
+            ax_HoltWinters.set_xlabel("day")
+            xlim = plt.gca().set_xlim(0, length[1]-1)
+            pd.concat([HW_add_add_dam.fittedvalues, HW_add_add_dam.forecast(len(valid))], ignore_index=True).rename('HW_add_add_dam')\
+                .plot(ax=ax_HoltWinters, color='red', legend=True)
+            pd.concat([pd.Series(HWA_WU['fittedvalues']), pd.Series(HWA_WU['pred'])], ignore_index=True).rename('HWA_WU')\
+                .plot(ax=ax_HoltWinters, color='y', legend=True)
+            plt.show()
+
+            # print statistics data
+            print('在训练集上，生产系统霍尔特温特斯加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWA_WU['rmse'] / np.sqrt(HW_add_add_dam.sse/(period)) * 100))
+            print('在验证集上，生产系统霍尔特温特斯加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWA_WU['pred']) - sin_itm_amt[period:period+len(valid)].values) / (HW_add_add_dam.forecast(len(valid)).values - sin_itm_amt[period:period+len(valid)].values))
+                * (np.array(range(len(valid), 0, -1)) / sum(np.array(range(1, len(valid))))))))
+
+        #########################################---------------HoltWinters multiplicative compare, below-----------
+            print('\n','生产系统、自定义、statsmodels中HoltWinters multiplicative对比：')
+            weights = []
+            for i in range(1, len((train + 1)[-(period + shift):]) + 1):
+                weights.append(i / len((train + 1)[-(period + shift):]))
+            weights = np.array(weights) / sum(weights)
+
+            # fit models
+            try:
+                HW_add_mul_dam = ExponentialSmoothing((train + 1)[-(period + shift):], seasonal_periods=period, trend='add', seasonal='mul',
+                                                      damped_trend=True, initialization_method='known',
+                                                      bounds={'smoothing_level': alpha, 'smoothing_trend': beta,
+                                                              'smoothing_seasonal': gamma},
+                        initial_level=np.average((train + 1)[-(period + shift):], weights=weights),
+                        initial_trend=np.array((sum((train + 1)[-(period + shift):][int(np.ceil(len((train + 1)[-(period + shift):]) / 2)):]) - sum((train + 1)[-(period + shift):][:int(np.floor(len((train + 1)[-(period + shift):]) / 2))])) / (np.floor(len((train + 1)[-(period + shift):]) / 2)) ** 2),
+                        initial_seasonal=np.array((train + 1)[-(period + shift):][:len((train + 1)[-(period + shift):]) // period * period]).reshape(-1, period).mean(axis=0) - np.average((train + 1)[-(period + shift):], weights=weights)
+                                                      ).fit(damping_trend=.98, use_boxcox=None, method='ls', use_brute=False)
+                n += 1
+            except Exception as e:
+                HW_add_mul_dam = ExponentialSmoothing((train + 1)[-(period + shift):], seasonal_periods=period, trend='add', seasonal='mul',
+                                                      damped_trend=True, initialization_method='known',
+                                                      bounds={'smoothing_level': alpha, 'smoothing_trend': beta,
+                                                              'smoothing_seasonal': gamma},
+                        initial_level=np.average((train + 1)[-(period + shift):], weights=weights),
+                        initial_trend=np.array((sum((train + 1)[-(period + shift):][int(np.ceil(len((train + 1)[-(period + shift):]) / 2)):]) - sum((train + 1)[-(period + shift):][:int(np.floor(len((train + 1)[-(period + shift):]) / 2))])) / (np.floor(len((train + 1)[-(period + shift):]) / 2)) ** 2),
+                        initial_seasonal=np.array((train + 1)[-(period + shift):][:len((train + 1)[-(period + shift):]) // period * period]).reshape(-1, period).mean(axis=0) - np.average((train + 1)[-(period + shift):], weights=weights)
+                                                      ).fit(damping_trend=.98, use_boxcox=None, method='L-BFGS-B', use_brute=False)
+                print(f'ls: {e}, 改用L-BFGS-B做梯度下降求解参数，此时目标函数为极大似然估计的形式')
+            print(f'parameters (statsmodels): alpha {round(HW_add_mul_dam.params["smoothing_level"], 3)}, '
+                  f'beta {round(HW_add_mul_dam.params["smoothing_trend"], 3)}, '
+                  f'gamma {round(HW_add_mul_dam.params["smoothing_seasonal"], 3)}')
+            HWM_WU = wualgorithm.multiplicative(list((train + 1)[-(period + shift):]), period, len(valid))
+
+            # print figures
+            plt.figure(f'{len((train + 1)[-(period + shift):])}+{len(valid)}+compared HW y_input_mul', figsize=(20,10))
+            ax_HoltWinters = (train+1)[:366+steps_day].rename('(train+1)[:366+steps_day]').plot(color='k', legend='True')
+            ax_HoltWinters.set_ylabel("amount")
+            ax_HoltWinters.set_xlabel("day")
+            xlim = plt.gca().set_xlim(0, length[1]-1)
+            pd.concat([HW_add_mul_dam.fittedvalues, HW_add_mul_dam.forecast(len(valid))], ignore_index=True).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='red', legend=True)
+            pd.concat([pd.Series(HWM_WU['fittedvalues']), pd.Series(HWM_WU['pred'])], ignore_index=True).rename('HWM_WU').plot(ax=ax_HoltWinters, color='y', legend=True)
+            plt.show()
+
+            # print statistics data
+            print('在训练集上，生产系统霍尔特温特斯乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWM_WU['rmse'] / np.sqrt(HW_add_mul_dam.sse/(period+shift)) * 100))
+            print('在验证集上，生产系统霍尔特温特斯乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWM_WU['pred']) - (sin_itm_amt+1)[period:period+len(valid)].values) / (HW_add_mul_dam.forecast(len(valid)).values - (sin_itm_amt+1)[period:period+len(valid)].values))
+                * (np.array(range(len(valid), 0, -1)) / sum(np.array(range(1, len(valid))))))))
+
+            print(f'\n使用ls的次数为：{n}\n占总训练次数的百分比：{round(n/2*100, 2)}')
     else:
-        raise ValueError('类型category只有三种取值：1,2,3')
-    n = 0  # 记录使用least square做目标函数和求解成功的次数
-    print('\n',f'生产系统、自定义、statsmodels中HoltWinters additive {period*2+shift} 对比：')
-    weights = []
-    for i in range(1, len(train) + 1):
-        weights.append(i / len(train))
-    weights = np.array(weights) / sum(weights)
-
-    # fit models
-    try:
-        HW_add_add_dam = ExponentialSmoothing(train, seasonal_periods=period, trend='add', seasonal='add',
-                                              damped_trend=True, initialization_method='known',
-                bounds={'smoothing_level': alpha, 'smoothing_trend': beta, 'smoothing_seasonal': gamma},
-                initial_level=np.average(train, weights=weights),
-                initial_trend=np.array((sum(train[int(np.ceil(len(train) / 2)):]) - sum(train[:int(np.floor(len(train) / 2))])) / (np.floor(len(train) / 2)) ** 2),
-                initial_seasonal=np.array(train[:len(train) // period * period]).reshape(-1, period).mean(axis=0) - np.average(train, weights=weights)
-                                              ).\
-            fit(damping_trend=.98, use_boxcox=None, method='ls', use_brute=False)
-        n += 1
-    except Exception as e:
-        HW_add_add_dam = ExponentialSmoothing(train, seasonal_periods=period, trend='add', seasonal='add',
-                                              damped_trend=True, initialization_method='known',
-                bounds={'smoothing_level': alpha, 'smoothing_trend': beta, 'smoothing_seasonal': gamma},
-                initial_level=np.average(train, weights=weights),
-                initial_trend=np.array((sum(train[int(np.ceil(len(train) / 2)):]) - sum(train[:int(np.floor(len(train) / 2))])) / (np.floor(len(train) / 2)) ** 2),
-                initial_seasonal=np.array(train[:len(train) // period * period]).reshape(-1, period).mean(axis=0) - np.average(train, weights=weights)
-                                              ).\
-            fit(damping_trend=.98, use_boxcox=None, method='L-BFGS-B', use_brute=False)
-        print(f'ls: {e}, 改用L-BFGS-B做梯度下降求解参数，此时目标函数为极大似然估计的形式')
-    print(f'parameters (statsmodels): alpha {round(HW_add_add_dam.params["smoothing_level"], 3)}, '
-          f'beta {round(HW_add_add_dam.params["smoothing_trend"], 3)}, '
-          f'gamma {round(HW_add_add_dam.params["smoothing_seasonal"], 3)}')
-    HWA_WU = wualgorithm.additive(list(train), period, len(valid))
-
-    # print figures
-    plt.figure(f'{len(train)}+{len(valid)}+compared HW train', figsize=(20,10))
-    ax_HoltWinters = train.rename('train').plot(color='k', legend='True')
-    ax_HoltWinters.set_ylabel("amount")
-    ax_HoltWinters.set_xlabel("day")
-    xlim = plt.gca().set_xlim(0, length[0]-1)
-    pd.concat([HW_add_add_dam.fittedvalues, HW_add_add_dam.forecast(len(valid))], ignore_index=True).rename('HW_add_add_dam').\
-        plot(ax=ax_HoltWinters, color='red', legend=True)
-    pd.concat([pd.Series(HWA_WU['fittedvalues']), pd.Series(HWA_WU['pred'])], ignore_index=True).rename('HWA_WU').\
-        plot(ax=ax_HoltWinters, color='y', legend=True)
-    plt.show()
-
-    # print statistics data
-    print('在训练集上，生产系统霍尔特温特斯加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWA_WU['rmse'] / np.sqrt(HW_add_add_dam.sse/(period*2)) * 100))
-    print('在验证集上，生产系统霍尔特温特斯加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWA_WU['pred']) - train[period*2:period*2+len(valid)].values) / (HW_add_add_dam.forecast(len(valid)).values - train[period*2:period*2+len(valid)].values))
-        * (np.array(range(len(valid), 0, -1)) / sum(np.array(range(len(valid), 0, -1)))))))
-
-    #########----------------------------------------------------------------------------------------------------------
-    print('\n',f'生产系统、自定义、statsmodels中HoltWinters additive {period} 对比：')
-    weights = []
-    for i in range(1, len(train[0:period+shift]) + 1):
-        weights.append(i / len(train[0:period+shift]))
-    weights = np.array(weights) / sum(weights)
-
-    # fit models
-    try:
-        HW_add_add_dam = ExponentialSmoothing(train[0:period+shift], seasonal_periods=period, trend='add', seasonal='add',
-                                              damped_trend=True, initialization_method='known',
-                                              bounds={'smoothing_level': alpha, 'smoothing_trend': beta,
-                                                      'smoothing_seasonal': gamma},
-                initial_level=np.average(train[0:period+shift], weights=weights),
-                initial_trend=np.array((sum(train[0:period+shift][int(np.ceil(len(train[0:period+shift]) / 2)):]) - sum(train[0:period+shift][:int(np.floor(len(train[0:period+shift]) / 2))])) / (np.floor(len(train[0:period+shift]) / 2)) ** 2),
-                initial_seasonal=np.array(train[0:period+shift][:len(train[0:period+shift]) // period * period]).reshape(-1, period).mean(axis=0) - np.average(train[0:period+shift], weights=weights)
-                                              ).fit(damping_trend=.98, use_boxcox=None, method='ls', use_brute=False)
-        n += 1
-    except Exception as e:
-        HW_add_add_dam = ExponentialSmoothing(train[0:period+shift], seasonal_periods=period, trend='add', seasonal='add',
-                                              damped_trend=True, initialization_method='known',
-                                              bounds={'smoothing_level': alpha, 'smoothing_trend': beta,
-                                                      'smoothing_seasonal': gamma},
-                initial_level=np.average(train[0:period+shift], weights=weights),
-                initial_trend=np.array((sum(train[0:period+shift][int(np.ceil(len(train[0:period+shift]) / 2)):]) - sum(train[0:period+shift][:int(np.floor(len(train[0:period+shift]) / 2))])) / (np.floor(len(train[0:period+shift]) / 2)) ** 2),
-                initial_seasonal=np.array(train[0:period+shift][:len(train[0:period+shift]) // period * period]).reshape(-1, period).mean(axis=0) - np.average(train[0:period+shift], weights=weights)
-                                              ).fit(damping_trend=.98, use_boxcox=None, method='L-BFGS-B', use_brute=False)
-        print(f'ls: {e}, 改用L-BFGS-B做梯度下降求解参数，此时目标函数为极大似然估计的形式')
-    print(f'parameters (statsmodels): alpha {round(HW_add_add_dam.params["smoothing_level"], 3)}, '
-          f'beta {round(HW_add_add_dam.params["smoothing_trend"], 3)}, '
-          f'gamma {round(HW_add_add_dam.params["smoothing_seasonal"], 3)}')
-    HWA_WU = wualgorithm.additive(list(train[0:period+shift]), period, len(valid))
-
-    # print figures
-    plt.figure(f'{len(train[0:period+shift])}+{len(valid)}+compared HW y_input_add', figsize=(20,10))
-    ax_HoltWinters = train[:366+steps_day].rename('train[:366+steps_day]').plot(color='k', legend='True')
-    ax_HoltWinters.set_ylabel("amount")
-    ax_HoltWinters.set_xlabel("day")
-    xlim = plt.gca().set_xlim(0, length[1]-1)
-    pd.concat([HW_add_add_dam.fittedvalues, HW_add_add_dam.forecast(len(valid))], ignore_index=True).rename('HW_add_add_dam')\
-        .plot(ax=ax_HoltWinters, color='red', legend=True)
-    pd.concat([pd.Series(HWA_WU['fittedvalues']), pd.Series(HWA_WU['pred'])], ignore_index=True).rename('HWA_WU')\
-        .plot(ax=ax_HoltWinters, color='y', legend=True)
-    plt.show()
-
-    # print statistics data
-    print('在训练集上，生产系统霍尔特温特斯加法模型的RMSE与HW_add_add_dam的RMSE之比为：{:.2f}%'.format(HWA_WU['rmse'] / np.sqrt(HW_add_add_dam.sse/(period)) * 100))
-    print('在验证集上，生产系统霍尔特温特斯加法模型与HW_add_add_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWA_WU['pred']) - sin_itm_amt[period:period+len(valid)].values) / (HW_add_add_dam.forecast(len(valid)).values - sin_itm_amt[period:period+len(valid)].values))
-        * (np.array(range(len(valid), 0, -1)) / sum(np.array(range(1, len(valid))))))))
-    #########################################----------------------------------------------------------------------------
-
-    #####################################---HoltWinters multiplicative compare, below---###################################
-    print('\n','生产系统、自定义、statsmodels中HoltWinters multiplicative对比：')
-    weights = []
-    for i in range(1, len((train+1)[0:period*2+shift]) + 1):
-        weights.append(i / len((train+1)[0:period*2+shift]))
-    weights = np.array(weights) / sum(weights)
-
-    # fit models
-    try:
-        HW_add_mul_dam = ExponentialSmoothing((train+1)[0:period*2+shift], seasonal_periods=period, trend='add', seasonal='mul',
-                                              damped_trend=True, initialization_method='known',
-                                              bounds={'smoothing_level': alpha, 'smoothing_trend': beta,
-                                                      'smoothing_seasonal': gamma},
-                initial_level=np.average((train+1)[0:period*2+shift], weights=weights),
-                initial_trend=np.array((sum((train+1)[0:period*2+shift][int(np.ceil(len((train+1)[0:period*2+shift]) / 2)):]) - sum((train+1)[0:period*2+shift][:int(np.floor(len((train+1)[0:period*2+shift]) / 2))])) / (np.floor(len((train+1)[0:period*2+shift]) / 2)) ** 2),
-                initial_seasonal=np.array((train+1)[0:period*2+shift][:len((train+1)[0:period*2+shift]) // period * period]).reshape(-1, period).mean(axis=0) - np.average((train+1)[0:period*2+shift], weights=weights)
-                                              ).\
-            fit(damping_trend=0.98, use_boxcox=None, method='ls', use_brute=False)
-        n += 1
-    except Exception as e:
-        HW_add_mul_dam = ExponentialSmoothing((train+1)[0:period*2+shift], seasonal_periods=period, trend='add', seasonal='mul',
-                                              damped_trend=True, initialization_method='known',
-                                              bounds={'smoothing_level': alpha, 'smoothing_trend': beta,
-                                                      'smoothing_seasonal': gamma},
-                initial_level=np.average((train+1)[0:period*2+shift], weights=weights),
-                initial_trend=np.array((sum((train+1)[0:period*2+shift][int(np.ceil(len((train+1)[0:period*2+shift]) / 2)):]) - sum((train+1)[0:period*2+shift][:int(np.floor(len((train+1)[0:period*2+shift]) / 2))])) / (np.floor(len((train+1)[0:period*2+shift]) / 2)) ** 2),
-                initial_seasonal=np.array((train+1)[0:period*2+shift][:len((train+1)[0:period*2+shift]) // period * period]).reshape(-1, period).mean(axis=0) - np.average((train+1)[0:period*2+shift], weights=weights)
-                                              ).\
-            fit(damping_trend=0.98, use_boxcox=None, method='L-BFGS-B', use_brute=False)
-        print(f'ls: {e}, 改用L-BFGS-B做梯度下降求解参数，此时目标函数为极大似然估计的形式')
-    print(f'parameters (statsmodels): alpha {round(HW_add_mul_dam.params["smoothing_level"], 3)}, '
-          f'beta {round(HW_add_mul_dam.params["smoothing_trend"], 3)}, '
-          f'gamma {round(HW_add_mul_dam.params["smoothing_seasonal"], 3)}')
-    HWM_WU = wualgorithm.multiplicative(list((train+1)[0:period*2+shift]), period, len(valid))
-
-    # print figures
-    plt.figure(f'{len((train+1)[0:period*2+shift])}+{len(valid)}+compared HW y_input_mul', figsize=(20,10))
-    ax_HoltWinters = (train+1).rename('(train+1)').plot(color='k', legend='True')
-    ax_HoltWinters.set_ylabel("amount")
-    ax_HoltWinters.set_xlabel("day")
-    xlim = plt.gca().set_xlim(0, length[0]-1)
-    pd.concat([HW_add_mul_dam.fittedvalues, HW_add_mul_dam.forecast(len(valid))], ignore_index=True).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='red', legend=True)
-    pd.concat([pd.Series(HWM_WU['fittedvalues']), pd.Series(HWM_WU['pred'])], ignore_index=True).rename('HWM_WU').plot(ax=ax_HoltWinters, color='y', legend=True)
-    plt.show()
-
-    # print statistics data
-    print('在训练集上，生产系统霍尔特温特斯乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.
-          format(HWM_WU['rmse'] / np.sqrt(HW_add_mul_dam.sse/(period*2+shift)) * 100))
-    print('在验证集上，生产系统霍尔特温特斯乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.
-          format(sum(abs((np.array(HWM_WU['pred']) - (sin_itm_amt+1)[period*2:period*2+len(valid)].values) /
-                         (HW_add_mul_dam.forecast(len(valid)).values - (sin_itm_amt+1)[period*2:period*2+len(valid)].values))
-        * (np.array(range(len(valid), 0, -1)) / sum(np.array(range(1, len(valid))))))))
-    #########################################---------------------------------------------------------------------------
-
-    print('\n','生产系统、自定义、statsmodels中HoltWinters multiplicative对比：')
-    weights = []
-    for i in range(1, len((train+1)[0:period+shift]) + 1):
-        weights.append(i / len((train+1)[0:period+shift]))
-    weights = np.array(weights) / sum(weights)
-
-    # fit models
-    try:
-        HW_add_mul_dam = ExponentialSmoothing((train+1)[0:period+shift], seasonal_periods=period, trend='add', seasonal='mul',
-                                              damped_trend=True, initialization_method='known',
-                                              bounds={'smoothing_level': alpha, 'smoothing_trend': beta,
-                                                      'smoothing_seasonal': gamma},
-                initial_level=np.average((train+1)[0:period+shift], weights=weights),
-                initial_trend=np.array((sum((train+1)[0:period+shift][int(np.ceil(len((train+1)[0:period+shift]) / 2)):]) - sum((train+1)[0:period+shift][:int(np.floor(len((train+1)[0:period+shift]) / 2))])) / (np.floor(len((train+1)[0:period+shift]) / 2)) ** 2),
-                initial_seasonal=np.array((train+1)[0:period+shift][:len((train+1)[0:period+shift]) // period * period]).reshape(-1, period).mean(axis=0) - np.average((train+1)[0:period+shift], weights=weights)
-                                              ).fit(damping_trend=.98, use_boxcox=None, method='ls', use_brute=False)
-        n += 1
-    except Exception as e:
-        HW_add_mul_dam = ExponentialSmoothing((train+1)[0:period+shift], seasonal_periods=period, trend='add', seasonal='mul',
-                                              damped_trend=True, initialization_method='known',
-                                              bounds={'smoothing_level': alpha, 'smoothing_trend': beta,
-                                                      'smoothing_seasonal': gamma},
-                initial_level=np.average((train+1)[0:period+shift], weights=weights),
-                initial_trend=np.array((sum((train+1)[0:period+shift][int(np.ceil(len((train+1)[0:period+shift]) / 2)):]) - sum((train+1)[0:period+shift][:int(np.floor(len((train+1)[0:period+shift]) / 2))])) / (np.floor(len((train+1)[0:period+shift]) / 2)) ** 2),
-                initial_seasonal=np.array((train+1)[0:period+shift][:len((train+1)[0:period+shift]) // period * period]).reshape(-1, period).mean(axis=0) - np.average((train+1)[0:period+shift], weights=weights)
-                                              ).fit(damping_trend=.98, use_boxcox=None, method='L-BFGS-B', use_brute=False)
-        print(f'ls: {e}, 改用L-BFGS-B做梯度下降求解参数，此时目标函数为极大似然估计的形式')
-    print(f'parameters (statsmodels): alpha {round(HW_add_mul_dam.params["smoothing_level"], 3)}, '
-          f'beta {round(HW_add_mul_dam.params["smoothing_trend"], 3)}, '
-          f'gamma {round(HW_add_mul_dam.params["smoothing_seasonal"], 3)}')
-    HWM_WU = wualgorithm.multiplicative(list((train+1)[0:period+shift]), period, len(valid))
-
-    # print figures
-    plt.figure(f'{len((train+1)[0:period+shift])}+{len(valid)}+compared HW y_input_mul', figsize=(20,10))
-    ax_HoltWinters = (train+1)[:366+steps_day].rename('(train+1)[:366+steps_day]').plot(color='k', legend='True')
-    ax_HoltWinters.set_ylabel("amount")
-    ax_HoltWinters.set_xlabel("day")
-    xlim = plt.gca().set_xlim(0, length[1]-1)
-    pd.concat([HW_add_mul_dam.fittedvalues, HW_add_mul_dam.forecast(len(valid))], ignore_index=True).rename('HW_add_mul_dam').plot(ax=ax_HoltWinters, color='red', legend=True)
-    pd.concat([pd.Series(HWM_WU['fittedvalues']), pd.Series(HWM_WU['pred'])], ignore_index=True).rename('HWM_WU').plot(ax=ax_HoltWinters, color='y', legend=True)
-    plt.show()
-
-    # print statistics data
-    print('在训练集上，生产系统霍尔特温特斯乘法模型的RMSE与HW_add_mul_dam的RMSE之比为：{:.2f}%'.format(HWM_WU['rmse'] / np.sqrt(HW_add_mul_dam.sse/(period+shift)) * 100))
-    print('在验证集上，生产系统霍尔特温特斯乘法模型与HW_add_mul_dam的加权MASE值为：{:.2f}'.format(sum(abs((np.array(HWM_WU['pred']) - (sin_itm_amt+1)[period:period+len(valid)].values) / (HW_add_mul_dam.forecast(len(valid)).values - (sin_itm_amt+1)[period:period+len(valid)].values))
-        * (np.array(range(len(valid), 0, -1)) / sum(np.array(range(1, len(valid))))))))
-
-    print(f'\n使用ls的次数为：{n}\n占总训练次数的百分比：{round(n/4*100, 2)}')
+        # 移动假日不训练，只使用日序，配置参数和周期m
+        pass
 else:
-    # 移动假日不训练，只使用日序，配置参数和周期m
-    pass
+    print(f'organ: {single_item["organ"][0]}, code: {single_item["code"][0]}, 训练集长度: {len(train)}, 验证集长度: {len(valid)}\n'
+          f'不满足三参数模型的测试条件：训练集长度大于一个周期+shift，且验证集上有销售\n')
 
-
-pd.concat([HW_add_mul_dam.fittedvalues, HW_add_mul_dam.forecast(len(valid))], ignore_index=True).rename('HW_add_mul_dam')
+# pd.concat([HW_add_mul_dam.fittedvalues, HW_add_mul_dam.forecast(len(valid))], ignore_index=True).rename('HW_add_mul_dam')
